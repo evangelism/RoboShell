@@ -64,6 +64,20 @@ namespace RuleEngineNet
         }
     }
 
+    public class OneOf : CombinedAction
+    {
+        protected Random Rnd = new Random();
+
+        public OneOf(IEnumerable<Action> Actions) : base(Actions) { }
+
+        public override void Execute(State S)
+        {
+            var n = Rnd.Next(0, Actions.Count);
+            Actions[n].Execute(S);
+        }
+
+    }
+
     public class Say : Action
     {
         public static ISpeaker Speaker { get; set; }

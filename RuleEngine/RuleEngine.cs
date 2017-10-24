@@ -11,6 +11,7 @@ namespace RuleEngineNet
     public class RuleEngine
     {
         public State State { get; private set; }
+        public State InitialState { get; private set; }
         public List<Rule> KnowlegeBase { get; private set; }
         public RuleEngine()
         {
@@ -22,6 +23,7 @@ namespace RuleEngineNet
         {
             this.KnowlegeBase = KB;
             this.State = S;
+            this.InitialState = S;
         }
 
         public static RuleEngine LoadXml(XDocument xdoc)
@@ -42,6 +44,16 @@ namespace RuleEngineNet
         public void SetSpeaker(ISpeaker spk)
         {
             Say.Speaker = spk;
+        }
+
+        public void Reset()
+        {
+            State = new State(InitialState);
+        }
+
+        public void SetVar(string Var, string Val)
+        {
+            State.Assign(Var, Val);
         }
 
         public IEnumerable<Rule> GetConflictSet(State S)

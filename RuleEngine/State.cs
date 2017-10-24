@@ -8,6 +8,11 @@ namespace RuleEngineNet
 {
     public class State : Dictionary<string,string>
     {
+        public State(State S) : base()
+        {
+            foreach (var x in S.Keys) this.Add(x, S[x]);
+        }
+
         public string Eval(string x)
         {
             return this[x];

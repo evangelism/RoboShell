@@ -1,13 +1,18 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
 <RuleEngine>
   <Rules>
-    <Rule Priority="100">
+    <Rule>
       <If>
-        <Compare Var="Age" Type="lt" Value="10"/>
+        <Compare Var="FaceCount" Value="1"/>
+        <Compare Var="Gender" Value="M"/>
+        <Compare Var="Age" Type="lt" Value="15"/>
       </If>
       <Then>
-        <Assign Var="Res" Value="Да ты ребёнок!"/>
-        <Say Text="Oh, you are so young!"/>
+        <Assign Var="State" Value="Да ты ребёнок!"/>
+        <OneOf>
+          <Say Text="Oh, such a nice boy!"/>
+          <Say Text="Welcome, young man!"/>
+        </OneOf>
       </Then>
     </Rule>
   </Rules>
