@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<RuleEngine>
+  <Rules>
+    <Rule Priority="100">
+      <If>
+        <Compare Var="Age" Type="lt" Value="10"/>
+      </If>
+      <Then>
+        <Assign Var="Res" Value="Да ты ребёнок!"/>
+        <Say Text="Oh, you are so young!"/>
+      </Then>
+    </Rule>
+  </Rules>
+  <State>
+    <Var Name="Age" Value="5"/>
+  </State>
+</RuleEngine>
