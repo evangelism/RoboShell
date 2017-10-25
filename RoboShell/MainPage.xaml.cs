@@ -18,6 +18,7 @@ using System.Xml.Linq;
 using RoboLogic;
 using Microsoft.ProjectOxford.Face;
 using Windows.UI.Xaml.Media;
+using Windows.System;
 
 // Это приложение получает ваше изображение с веб-камеры и
 // распознаёт эмоции на нём, обращаясь к Cognitive Services
@@ -35,7 +36,7 @@ namespace RoboShell
         MediaCapture MC;
 
         DispatcherTimer FaceWaitTimer = new DispatcherTimer() { Interval = TimeSpan.FromSeconds(2) };
-        DispatcherTimer DropoutTimer = new DispatcherTimer() { Interval = TimeSpan.FromSeconds(1) };
+        DispatcherTimer DropoutTimer = new DispatcherTimer() { Interval = TimeSpan.FromSeconds(3) };
         DispatcherTimer InferenceTimer = new DispatcherTimer() { Interval = TimeSpan.FromSeconds(1) };
 
         EmotionServiceClient EmoAPI = new EmotionServiceClient(Config.EmotionAPIKey,Config.EmotionAPIEndpoint);
@@ -74,7 +75,28 @@ namespace RoboShell
             FaceWaitTimer.Tick += StartDialog;
             DropoutTimer.Tick += FaceDropout;
             InferenceTimer.Tick += InferenceStep;
+            CoreWindow.GetForCurrentThread().KeyDown += KeyPressed;
             await Init();
+        }
+
+        private void KeyPressed(CoreWindow sender, KeyEventArgs args)
+        {
+            if (args.VirtualKey >= VirtualKey.Number0 &&
+                args.VirtualKey <= VirtualKey.Number9)
+            {
+                var st = $"Key_{args.VirtualKey - VirtualKey.Number0}";
+                Trace($"Initiating event {st}");
+                RE.SetVar("Event", st);
+                RE.Step();
+            }
+            // S = print state
+            if (args.VirtualKey == VirtualKey.S)
+            {
+                foreach(var x in RE.State)
+                {
+                    Trace($" > {x.Key} -> {x.Value}");
+                }
+            }
         }
 
         private void InferenceStep(object sender, object e)

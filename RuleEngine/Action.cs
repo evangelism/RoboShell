@@ -17,6 +17,8 @@ namespace RuleEngineNet
             {
                 case "Assign":
                     return Assign.Parse(X);
+                case "Clear":
+                    return Clear.Parse(X);
                 case "Say":
                     return Say.Parse(X);
                 case "OneOf":
@@ -47,6 +49,24 @@ namespace RuleEngineNet
         public static Assign Parse(XElement X)
         {
             return new Assign(X.Attribute("Var").Value, X.Attribute("Value").Value);
+        }
+
+    }
+
+    public class Clear : Action
+    {
+        public string Var { get; set; }
+        public Clear(string Var)
+        { this.Var = Var; }
+
+        public override void Execute(State S)
+        {
+            S.Remove(Var);
+        }
+
+        public static Clear Parse(XElement X)
+        {
+            return new Clear(X.Attribute("Var").Value);
         }
 
     }

@@ -53,11 +53,22 @@
       </If>
       <Then>
         <Assign Var="State" Value="Stage2"/>
-        <Say Text="Let me introduce myself. I am ${RobotName}"/>
+        <Say Text="{Let me introduce myself. I am ${RobotName}.|I am ${RobotName}, pleased to meet you!} When you are ready to chat, press one"/>
+      </Then>
+    </Rule>
+    <Rule>
+      <If>
+        <Compare Var="State" Value="Stage2"/>
+        <Compare Var="Event" Value="Key_1"/>
+      </If>
+      <Then>
+        <Assign Var="State" Value="Stage3"/>
+        <Clear Var="Event"/>
+        <Say Text="Oh well!"></Say>
       </Then>
     </Rule>
   </Rules>
   <State>
-    <Var Name="RobotName" Value="Octopus Vassili"/>
+    <Var Name="RobotName" Value="Blinky the Robot"/>
   </State>
 </RuleEngine>
