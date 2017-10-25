@@ -1,22 +1,63 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
 <RuleEngine>
   <Rules>
+    <!-- Calculate age category -->
+    <Rule Priority="50">
+      <If><Interval Var="Age" Min="0" Max="10"/></If>
+      <Then><Assign Var="AgeCat" Value="B"/></Then>
+    </Rule>
+    <Rule Priority="50">
+      <If><Interval Var="Age" Min="11" Max="18"/></If>
+      <Then><Assign Var="AgeCat" Value="T"/></Then>
+    </Rule>
+    <Rule Priority="50">
+      <If><Interval Var="Age" Min="19" Max="50"/></If>
+      <Then><Assign Var="AgeCat" Value="A"/></Then>
+    </Rule>
+    <Rule Priority="50">
+      <If><Interval Var="Age" Min="51" Max="999"/></If>
+      <Then><Assign Var="AgeCat" Value="O"/></Then>
+    </Rule>
+    
+    <!-- Process FaceIn Event -->
     <Rule>
       <If>
+        <Compare Var="Event" Value="FaceIn"/>
         <Compare Var="FaceCount" Value="1"/>
-        <Compare Var="Gender" Value="M"/>
-        <Compare Var="Age" Type="lt" Value="15"/>
       </If>
       <Then>
-        <Assign Var="State" Value="Да ты ребёнок!"/>
+        <Assign Var="State" Value="Stage1"/>
         <OneOf>
-          <Say Text="Oh, such a nice boy!"/>
-          <Say Text="Welcome, young man!"/>
+          <Say Text="Oh, such a {nice|cute|beautiful} {${Gender}${AgeCat}:MB=boy|MT=teenager|MA=man|MO=dedushka|FB=girl|FT=girl|FA=woman|FO=babushka}!"/>
+          <Say Text="Welcome, {${AgeCat}:B=young|T=young|A=|O=old} {${Gender}:M=man|F=lady}!"/>
         </OneOf>
+      </Then>
+    </Rule>
+    <Rule>
+      <If>
+        <Compare Var="Event" Value="FaceIn"/>
+        <Compare Var="FaceCount" Type="gt" Value="1"/>
+      </If>
+      <Then>
+        <Assign Var="State" Value="Stage1"/>
+        <OneOf>
+          <Say Text="Oh, you are such a {nice|cute|beautiful} group of people!"/>
+          <Say Text="Welcome, people of {earth|this planet}!"/>
+          <Say Text="Hey, {${Gender}:MF=boys|girls}"/>
+        </OneOf>
+      </Then>
+    </Rule>
+    <Rule>
+      <If>
+        <Compare Var="State" Value="Stage1"/>
+      </If>
+      <Then>
+        <Assign Var="State" Value="Stage2"/>
+        <Say Text="Let me introduce myself. I am ${RobotName}"/>
       </Then>
     </Rule>
   </Rules>
   <State>
-    <Var Name="Age" Value="5"/>
+    <Var Name="RobotName" Value="Octopus Vassili"/>
   </State>
 </RuleEngine>

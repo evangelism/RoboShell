@@ -17,9 +17,12 @@ namespace RuleEngineNet
             switch (X.Name.LocalName)
             {
                 case "And":
-                    return new ExpressionAnd(from z in X.Descendants() select Expression.LoadXml(z));
+                    return new ExpressionAnd(from z in X.Elements() select Expression.LoadXml(z));
                 case "Compare":
+                    if (X.Attribute("Type") == null) return new Comparison(X.Attribute("Var").Value, X.Attribute("Value").Value);
                     return new Comparison(X.Attribute("Var").Value, X.Attribute("Value").Value, X.Attribute("Type").Value);
+                case "Interval":
+                    return new Interval(X.Attribute("Var").Value, X.Attribute("Min").Value, X.Attribute("Max").Value);
                 default:
                     throw new RuleEngineException("Invalid expression");
             }
@@ -40,9 +43,14 @@ namespace RuleEngineNet
             this.Value = Value;
         }
 
+        public Comparison(string Var, string Value) : this(Var, Value, "eq") { }
+
+
+
         public override string Eval(State s)
         {
             var x = s.Eval(Var);
+            if (x == null) return false.AsString();
             switch (ComparisonType)
             {
                 case "eq":
@@ -59,6 +67,28 @@ namespace RuleEngineNet
             }
         }
     }
+
+    public class Interval: Expression
+    {
+        public string Var { get; set; }
+        public string Min { get; set; }
+        public string Max { get; set; }
+
+        public Interval(string Var, string Min, string Max)
+        {
+            this.Min = Min;
+            this.Var = Var;
+            this.Max = Max;
+        }
+
+        public override string Eval(State s)
+        {
+            var x = s.Eval(Var);
+            if (x == null) return false.AsString();
+            return (x.AsFloat() < Max.AsFloat() && x.AsFloat() > Min.AsFloat()).AsString();
+        }
+    }
+
 
     public abstract class ExpressionSeq : Expression
     {

@@ -17,6 +17,7 @@ using RuleEngineNet;
 using System.Xml.Linq;
 using RoboLogic;
 using Microsoft.ProjectOxford.Face;
+using Windows.UI.Xaml.Media;
 
 // Это приложение получает ваше изображение с веб-камеры и
 // распознаёт эмоции на нём, обращаясь к Cognitive Services
@@ -33,8 +34,9 @@ namespace RoboShell
 
         MediaCapture MC;
 
-        DispatcherTimer FaceWaitTimer = new DispatcherTimer() { Interval = TimeSpan.FromSeconds(3) };
+        DispatcherTimer FaceWaitTimer = new DispatcherTimer() { Interval = TimeSpan.FromSeconds(2) };
         DispatcherTimer DropoutTimer = new DispatcherTimer() { Interval = TimeSpan.FromSeconds(1) };
+        DispatcherTimer InferenceTimer = new DispatcherTimer() { Interval = TimeSpan.FromSeconds(1) };
 
         EmotionServiceClient EmoAPI = new EmotionServiceClient(Config.EmotionAPIKey,Config.EmotionAPIEndpoint);
         FaceServiceClient FaceAPI = new FaceServiceClient(Config.FaceAPIKey,Config.FaceAPIEndpoint);
@@ -53,6 +55,11 @@ namespace RoboShell
             this.InitializeComponent();
         }
 
+        public void Trace(string s)
+        {
+            System.Diagnostics.Debug.WriteLine(s);
+        }
+
         /// <summary>
         /// Первоначальная инициализация страницы
         /// </summary>
@@ -60,12 +67,20 @@ namespace RoboShell
         {
             base.OnNavigatedTo(e);
             var spk = new UWPLocalSpeaker(media);
+            Trace("Loading knowlegdebase");
             var xdoc = XDocument.Load("Robot.kb.xml");
             RE = RuleEngine.LoadXml(xdoc);
             RE.SetSpeaker(spk);
             FaceWaitTimer.Tick += StartDialog;
             DropoutTimer.Tick += FaceDropout;
+            InferenceTimer.Tick += InferenceStep;
             await Init();
+        }
+
+        private void InferenceStep(object sender, object e)
+        {
+            if (media.CurrentState == MediaElementState.Playing) return;
+            var s = RE.Step();
         }
 
         /// <summary>
@@ -73,6 +88,7 @@ namespace RoboShell
         /// </summary>
         private async Task Init()
         {
+            Trace("Initializing media...");
             MC = new MediaCapture();
             var cameras = await DeviceInformation.FindAllAsync(DeviceClass.VideoCapture);
             var camera = cameras.First();
@@ -117,25 +133,35 @@ namespace RoboShell
             {
                 FaceRect.Visibility = Visibility.Collapsed;
                 FaceWaitTimer.Stop();
-                IsFacePresent = false;
-                if (InDialog)
+                if (IsFacePresent)
                 {
-                    DropoutTimer.Start();
+                    IsFacePresent = false;
+                    if (true || InDialog)
+                    {
+                        DropoutTimer.Start();
+                    }
                 }
             }
             else
             {
+                DropoutTimer.Stop();
                 FaceRect.Margin = new Thickness(cx * face.FaceBox.X, cy * face.FaceBox.Y, 0, 0);
                 FaceRect.Width = cx * face.FaceBox.Width;
                 FaceRect.Height = cy * face.FaceBox.Height;
                 FaceRect.Visibility = Visibility.Visible;
-                IsFacePresent = true;
-                FaceWaitTimer.Start(); // wait for 3 seconds to make sure face stable
+                if (!IsFacePresent)
+                {
+                    IsFacePresent = true;
+                    FaceWaitTimer.Start(); // wait for 3 seconds to make sure face stable
+                }
             }
         }
 
         void FaceDropout(object sender, object e)
         {
+            DropoutTimer.Stop();
+            Trace("Face dropout initiated");
+            InferenceTimer.Stop();
             RE.Reset();
             RE.SetVar("Event", "FaceOut");
             RE.Run();
@@ -145,11 +171,14 @@ namespace RoboShell
         async void StartDialog(object sender, object e)
         {
             if (!IsFacePresent) return;
+            Trace("Calling face recognition");
             var res = await RecognizeFace();
             if (res)
             {
+                Trace("Initiating FaceIn Event");
                 RE.SetVar("Event", "FaceIn");
-                RE.Run();
+                RE.Step();
+                InferenceTimer.Start();
             }
         }
 
@@ -181,7 +210,8 @@ namespace RoboShell
                 if (males > 0 && females == 0) RE.SetVar("Gender", "M");
                 if (males > 0 && females > 0) RE.SetVar("Gender", males > females ? "MF" : "FM");
                 RE.SetVar("Age", ((int)(sumage / count)).ToString());
-                RE.Run();
+                Trace($"Starting with #faces={RE.State.Eval("FaceCount")}, age={RE.State.Eval("Age")}, gender={RE.State.Eval("Gender")}");
+                return true;
             }
             else
             {

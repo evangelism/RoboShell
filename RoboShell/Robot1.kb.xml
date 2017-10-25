@@ -1,0 +1,22 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<RuleEngine>
+  <Rules>
+    <Rule>
+      <If>
+        <Compare Var="FaceCount" Value="1"/>
+        <Compare Var="Gender" Value="M"/>
+        <Compare Var="Age" Type="lt" Value="15"/>
+      </If>
+      <Then>
+        <Assign Var="State" Value="Да ты ребёнок!"/>
+        <OneOf>
+          <Say Text="Oh, such a nice boy!"/>
+          <Say Text="Welcome, young man!"/>
+        </OneOf>
+      </Then>
+    </Rule>
+  </Rules>
+  <State>
+    <Var Name="Age" Value="5"/>
+  </State>
+</RuleEngine>

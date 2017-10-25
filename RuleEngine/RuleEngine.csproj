@@ -115,6 +115,7 @@
     <Compile Include="RuleEngine.cs" />
     <Compile Include="RuleEngineException.cs" />
     <Compile Include="State.cs" />
+    <Compile Include="StringProcessor.cs" />
     <EmbeddedResource Include="Properties\RuleEngine.rd.xml" />
   </ItemGroup>
   <ItemGroup>

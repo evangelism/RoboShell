@@ -24,12 +24,12 @@ namespace RuleEngineNet
 
         public static Rule LoadXml(XElement X)
         {
-            var t = (from x in X.Descendants("If").First().Descendants()
+            var t = (from x in X.Descendants("If").First().Elements()
                      select Expression.LoadXml(x)).ToList();
             Expression _if;
             if (t.Count == 1) _if = t[0];
             else _if = new ExpressionAnd(t);
-            var s = (from x in X.Descendants("Then").First().Descendants()
+            var s = (from x in X.Descendants("Then").First().Elements()
                      select Action.LoadXml(x)).ToList();
             Action _then;
             if (s.Count == 1) _then = s[0];

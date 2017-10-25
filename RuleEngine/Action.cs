@@ -19,6 +19,8 @@ namespace RuleEngineNet
                     return Assign.Parse(X);
                 case "Say":
                     return Say.Parse(X);
+                case "OneOf":
+                    return new OneOf(from z in X.Elements() select Action.LoadXml(z));
                 default:
                     throw new RuleEngineException("Unsupported action type");
             }
@@ -39,7 +41,7 @@ namespace RuleEngineNet
         public override void Execute(State S)
         {
             if (Expr != null) S.Assign(Var, Expr.Eval(S));
-            if (Value != null) S.Assign(Var, Value);
+            if (Value != null) S.Assign(Var, S.EvalString(Value));
         }
 
         public static Assign Parse(XElement X)
@@ -66,14 +68,11 @@ namespace RuleEngineNet
 
     public class OneOf : CombinedAction
     {
-        protected Random Rnd = new Random();
-
         public OneOf(IEnumerable<Action> Actions) : base(Actions) { }
 
         public override void Execute(State S)
         {
-            var n = Rnd.Next(0, Actions.Count);
-            Actions[n].Execute(S);
+            Actions.OneOf().Execute(S);
         }
 
     }
@@ -91,15 +90,12 @@ namespace RuleEngineNet
 
         public override void Execute(State S)
         {
-            Speaker.Speak(Text);
+            Speaker.Speak(S.EvalString(Text));
         }
 
         public static Say Parse(XElement X)
         {
             return new Say(X.Attribute("Text").Value);
         }
-
     }
-
-
 }

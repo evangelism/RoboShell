@@ -29,10 +29,10 @@ namespace RuleEngineNet
         public static RuleEngine LoadXml(XDocument xdoc)
         {
             var KB =
-                (from x in xdoc.Descendants("Rules")
+                (from x in xdoc.Descendants("Rules").First().Elements()
                  select Rule.LoadXml(x)).ToList();
             var S = new State();
-            var t = from x in xdoc.Descendants("State").First().Descendants()
+            var t = from x in xdoc.Descendants("State").First().Elements()
                     select x;
             foreach(var v in t)
             {
@@ -49,6 +49,10 @@ namespace RuleEngineNet
         public void Reset()
         {
             State = new State(InitialState);
+            foreach(var x in KnowlegeBase)
+            {
+                x.Active = true;
+            }
         }
 
         public void SetVar(string Var, string Val)

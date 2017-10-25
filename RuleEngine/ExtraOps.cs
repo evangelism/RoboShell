@@ -8,6 +8,13 @@ namespace RuleEngineNet
 {
     public static class ExtraOps
     {
+        public static Random Rnd = new Random();
+
+        public static T OneOf<T>(this IEnumerable<T> A)
+        {
+            return A.ElementAt(Rnd.Next(0, A.Count()));
+        }
+
         public static bool AsBool(this string s)
         {
             if ("t".Equals(s.ToLower())) return true;
