@@ -21,6 +21,8 @@ namespace RuleEngineNet
                     return Clear.Parse(X);
                 case "Say":
                     return Say.Parse(X);
+                case "Extension":
+                    return Extension.Parse(X);
                 case "OneOf":
                     return new OneOf(from z in X.Elements() select Action.LoadXml(z));
                 default:
@@ -118,4 +120,30 @@ namespace RuleEngineNet
             return new Say(X.Attribute("Text").Value);
         }
     }
+
+    public class Extension : Action
+    {
+        public static Action<string,string> Executor { get; set; }
+
+        public string Command { get; set; }
+        public string Param { get; set; }
+
+        public Extension(string Cmd, string Param = null)
+        {
+            this.Command = Cmd;
+            this.Param = Param;
+        }
+
+        public override void Execute(State S)
+        {
+            Executor(Command,Param);
+        }
+
+        public static Extension Parse(XElement X)
+        {
+            if (X.Attribute("Param")==null) return new Extension(X.Attribute("Command").Value);
+            else return new Extension(X.Attribute("Command").Value, X.Attribute("Param").Value);
+        }
+    }
+
 }

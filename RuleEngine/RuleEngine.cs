@@ -46,6 +46,11 @@ namespace RuleEngineNet
             Say.Speaker = spk;
         }
 
+        public void SetExecutor(Action<string,string> Executor)
+        {
+            Extension.Executor = Executor;
+        }
+
         public void Reset()
         {
             State = new State(InitialState);

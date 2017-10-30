@@ -1,5 +1,6 @@
 ﻿using Microsoft.ProjectOxford.Emotion;
 using Newtonsoft.Json;
+using RoboShell.Logic;
 using System;
 using System.IO;
 using System.Linq;
@@ -19,6 +20,7 @@ using RoboLogic;
 using Microsoft.ProjectOxford.Face;
 using Windows.UI.Xaml.Media;
 using Windows.System;
+using Microsoft.ProjectOxford.Emotion.Contract;
 
 // Это приложение получает ваше изображение с веб-камеры и
 // распознаёт эмоции на нём, обращаясь к Cognitive Services
@@ -46,8 +48,9 @@ namespace RoboShell
         FaceDetectionEffect FaceDetector;
         VideoEncodingProperties VideoProps;
 
-        bool IsFacePresent = false;
-        bool InDialog = false; 
+        bool IsFacePresent = false; // Shows the short-term state of the face in camera
+        bool InDialog = false; // represents long-term state - are we in dialog, or waiting for user
+        bool CaptureAfterEnd = false; // do face capture after speech ends
 
         RuleEngine RE;
 
@@ -59,6 +62,7 @@ namespace RoboShell
         public void Trace(string s)
         {
             System.Diagnostics.Debug.WriteLine(s);
+            log.Text += s + "\r\n";
         }
 
         /// <summary>
@@ -72,11 +76,34 @@ namespace RoboShell
             var xdoc = XDocument.Load("Robot.kb.xml");
             RE = RuleEngine.LoadXml(xdoc);
             RE.SetSpeaker(spk);
+            RE.SetExecutor(ExExecutor);
             FaceWaitTimer.Tick += StartDialog;
             DropoutTimer.Tick += FaceDropout;
             InferenceTimer.Tick += InferenceStep;
+            media.MediaEnded += EndSpeech;
             CoreWindow.GetForCurrentThread().KeyDown += KeyPressed;
             await Init();
+        }
+
+        private async void EndSpeech(object sender, RoutedEventArgs e)
+        {
+            if (CaptureAfterEnd)
+            {
+                CaptureAfterEnd = false;
+                await RecognizeFace();
+            }
+        }
+
+        // Function used to execute extensions commands of rule engine
+        private async void ExExecutor(string Cmd, string Param)
+        {
+            switch (Cmd)
+            {
+                case "Recapture":
+                    if (Param == "EndSpeech") CaptureAfterEnd = true;
+                    else await RecognizeFace();
+                    break;
+            }
         }
 
         private void KeyPressed(CoreWindow sender, KeyEventArgs args)
@@ -126,6 +153,7 @@ namespace RoboShell
             FaceDetector.FaceDetected += FaceDetectedEvent;
             FaceDetector.DesiredDetectionInterval = TimeSpan.FromMilliseconds(100);
             FaceDetector.Enabled = true;
+            Trace($"Canvas = {canvas.Width}x{canvas.Height}");
 
             await MC.StartPreviewAsync();
             var props = MC.VideoDeviceController.GetMediaStreamProperties(MediaStreamType.VideoPreview);
@@ -158,10 +186,7 @@ namespace RoboShell
                 if (IsFacePresent)
                 {
                     IsFacePresent = false;
-                    if (true || InDialog)
-                    {
-                        DropoutTimer.Start();
-                    }
+                    DropoutTimer.Start();
                 }
             }
             else
@@ -174,7 +199,7 @@ namespace RoboShell
                 if (!IsFacePresent)
                 {
                     IsFacePresent = true;
-                    FaceWaitTimer.Start(); // wait for 3 seconds to make sure face stable
+                    if (!InDialog) FaceWaitTimer.Start(); // wait for 3 seconds to make sure face stable
                 }
             }
         }
@@ -182,6 +207,7 @@ namespace RoboShell
         void FaceDropout(object sender, object e)
         {
             DropoutTimer.Stop();
+            InDialog = false;
             Trace("Face dropout initiated");
             InferenceTimer.Stop();
             RE.Reset();
@@ -193,6 +219,7 @@ namespace RoboShell
         async void StartDialog(object sender, object e)
         {
             if (!IsFacePresent) return;
+            InDialog = true;
             Trace("Calling face recognition");
             var res = await RecognizeFace();
             if (res)
@@ -212,10 +239,15 @@ namespace RoboShell
             await MC.CapturePhotoToStreamAsync(ImageEncodingProperties.CreateJpeg(), ms.AsRandomAccessStream());
 
             ms.Position = 0L;
-            var Fce = await FaceAPI.DetectAsync(ms,false,false,new FaceAttributeType[] { FaceAttributeType.Age, FaceAttributeType.Gender });
+            var Fce = await FaceAPI.DetectAsync(ms.NewStream(),false,false,new FaceAttributeType[] { FaceAttributeType.Age, FaceAttributeType.Gender });
 
-            // ms.Position = 0L;
-            // var Emo = await EmoAPI.RecognizeAsync(ms);
+            Emotion[] Emo = null;
+
+            if (Config.RecognizeEmotions)
+            {
+                ms.Position = 0L;
+                Emo = await EmoAPI.RecognizeAsync(ms.NewStream());
+            }
 
             if (Fce != null && Fce.Length > 0)
             {
@@ -232,7 +264,12 @@ namespace RoboShell
                 if (males > 0 && females == 0) RE.SetVar("Gender", "M");
                 if (males > 0 && females > 0) RE.SetVar("Gender", males > females ? "MF" : "FM");
                 RE.SetVar("Age", ((int)(sumage / count)).ToString());
-                Trace($"Starting with #faces={RE.State.Eval("FaceCount")}, age={RE.State.Eval("Age")}, gender={RE.State.Eval("Gender")}");
+                if (Config.RecognizeEmotions)
+                {
+                    var em = Emo.Select(x=>x.Scores).AvEmotions().MainEmotion();
+                    RE.SetVar("Emotion", em.Item1);
+                }
+                Trace($"Face data: #faces={RE.State.Eval("FaceCount")}, age={RE.State.Eval("Age")}, gender={RE.State.Eval("Gender")}, emo={RE.State.Eval("Emotion")}");
                 return true;
             }
             else

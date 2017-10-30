@@ -54,7 +54,8 @@
       <Then>
         <Assign Var="State" Value="Stage2"/>
         <Say Text="{Let me introduce myself. I am ${RobotName}.|I am ${RobotName}, pleased to meet you!} When you are ready to chat, press one"/>
-      </Then>
+        <Extension Command="Recapture" Param="EndSpeech"/>
+    </Then>
     </Rule>
     <Rule>
       <If>
