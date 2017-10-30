@@ -19,7 +19,7 @@ namespace RoboShell.Logic
             var E = new EmotionScores();
             foreach(var x in E.GetType().GetProperties())
             {
-                var f = 0.0; int c = 0;
+                float f = 0; int c = 0;
                 foreach(var z in S)
                 {
                     c++; f += (float)x.GetValue(z);

@@ -28,6 +28,42 @@ namespace RuleEngineNet
             }
         }
 
+        public static Expression ParseString(string s)
+        {
+            string[] t;
+            if (s.Contains('&'))
+            {
+                t = s.Split('&');
+                return new ExpressionAnd(from x in t select Expression.ParseString(x));
+            }
+            if (s.Contains('|'))
+            {
+                t = s.Split('|');
+                return new ExpressionOr(from x in t select Expression.ParseString(x));
+            }
+            if (s.Contains("="))
+            {
+                t = s.Split('=');
+                return new Comparison(t[0].Trim(), t[1].Trim());
+            }
+            if (s.Contains("#"))
+            {
+                t = s.Split('#');
+                return new Comparison(t[0].Trim(), t[1].Trim(), "ne");
+            }
+            if (s.Contains(">"))
+            {
+                t = s.Split('>');
+                return new Comparison(t[0].Trim(), t[1].Trim(), "gt");
+            }
+            if (s.Contains("<"))
+            {
+                t = s.Split('<');
+                return new Comparison(t[0].Trim(), t[1].Trim(), "lt");
+            }
+            throw new RuleEngineException("Invalid text expression");
+        }
+
     }
 
     public class Comparison : Expression
@@ -113,5 +149,20 @@ namespace RuleEngineNet
         }
 
     }
+
+    public class ExpressionOr : ExpressionSeq
+    {
+        public ExpressionOr(IEnumerable<Expression> Expressions) : base(Expressions) { }
+        public override string Eval(State S)
+        {
+            foreach (var e in Operands)
+            {
+                if (e.Eval(S).AsBool()) return true.AsString();
+            }
+            return false.AsString();
+        }
+
+    }
+
 
 }

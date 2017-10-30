@@ -57,6 +57,8 @@ namespace RoboShell
 
         RuleEngine RE;
 
+        int BoringCounter = 60;
+
         public MainPage()
         {
             this.InitializeComponent();
@@ -149,10 +151,19 @@ namespace RoboShell
             }
         }
 
+        Random Rnd = new Random();
+
         private void InferenceStep(object sender, object e)
         {
             if (media.CurrentState == MediaElementState.Playing) return;
-            var s = RE.Step();
+            if (!InDialog) BoringCounter--;
+            if (BoringCounter==0)
+            {
+                RE.SetVar("Event", "Ping");
+                Trace("Ping event intiated");
+                BoringCounter = Rnd.Next(Config.MinBoringSeconds, Config.MaxBoringSeconds);
+            }
+            var s = RE.StepUntilLongRunning();
         }
 
         /// <summary>
@@ -230,11 +241,13 @@ namespace RoboShell
         {
             DropoutTimer.Stop();
             InDialog = false;
+            BoringCounter = Rnd.Next(Config.MinBoringSeconds, Config.MaxBoringSeconds);
             Trace("Face dropout initiated");
             InferenceTimer.Stop();
             RE.Reset();
             RE.SetVar("Event", "FaceOut");
             RE.Run();
+            InferenceTimer.Start();
         }
 
 

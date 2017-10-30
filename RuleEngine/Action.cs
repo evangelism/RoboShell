@@ -11,6 +11,7 @@ namespace RuleEngineNet
     public abstract class Action
     {
         public abstract void Execute(State S);
+        public virtual bool LongRunning { get; } = false;
         public static Action LoadXml(XElement X)
         {
             switch(X.Name.LocalName)
@@ -82,6 +83,25 @@ namespace RuleEngineNet
                 x.Execute(S);
         }
 
+        protected bool? long_running;
+        public override bool LongRunning
+        {
+            get
+            {
+                if (long_running.HasValue) return long_running.Value;
+                long_running = false;
+                foreach(var a in Actions)
+                {
+                    if (a.LongRunning)
+                    {
+                        long_running = true;
+                        break;
+                    }
+                }
+                return long_running.Value;
+            }
+        }
+
         public CombinedAction(IEnumerable<Action> Actions)
         {
             this.Actions = new List<Action>(Actions);
@@ -109,6 +129,8 @@ namespace RuleEngineNet
         {
             this.Text=Text;
         }
+
+        public override bool LongRunning => true;
 
         public override void Execute(State S)
         {

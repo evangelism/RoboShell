@@ -26,8 +26,19 @@ namespace RuleEngineNet
 
         public static Rule LoadXml(XElement X)
         {
-            var t = (from x in X.Descendants("If").First().Elements()
+            List<Expression> t;
+            var IfNode = X.Descendants("If").First();
+            if (IfNode.Elements()!=null && IfNode.Elements().Count()>0)
+            {
+                t = (from x in X.Descendants("If").First().Elements()
                      select Expression.LoadXml(x)).ToList();
+            }
+            else t = new List<Expression>();
+            // var t = (t1 == null || t1.Count() == 0) ? new List<Expression>() : t1.ToList(); 
+            if (IfNode.Attribute("Text")!=null)
+            {
+                t.Insert(0, Expression.ParseString(IfNode.Attribute("Text").Value));
+            }
             Expression _if;
             if (t.Count == 1) _if = t[0];
             else _if = new ExpressionAnd(t);

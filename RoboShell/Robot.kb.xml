@@ -18,6 +18,15 @@
       <If><Interval Var="Age" Min="51" Max="999"/></If>
       <Then><Assign Var="AgeCat" Value="O"/></Then>
     </Rule>
+
+    <!-- Process boredom events -->
+    <Rule RuleSet="boredom">
+      <If Text="Event=Ping"/>
+      <Then>
+        <Say Text="I am bored. Please come and talk to me!"/>
+        <Clear Var="Event"/>
+      </Then>
+    </Rule>
     
     <!-- Process FaceIn Event -->
     <Rule>
@@ -69,7 +78,7 @@
       </If>
       <Then>
         <Assign Var="State" Value="Stage2"/>
-        <Say Text="{Let me introduce myself. {I am|My name is} ${RobotName}.|I am ${RobotName}, pleased to meet you!} When you are ready to chat, press one"/>
+        <Say Text="{Let me introduce myself. My name is ${RobotName}.|I am ${RobotName}, pleased to meet you!} When you are ready to chat, press one"/>
         <Extension Command="Recapture" Param="After:2"/>
     </Then>
     </Rule>
@@ -84,7 +93,7 @@
         <Say Text="Oh well! Why do you look so {${Emotion}:Surprise=Surprised|Anger=Angry|Happiness=Happy|Sadness=Sad|Strange}?"></Say>
       </Then>
     </Rule>
-    <Rule RuleSet="em">
+    <Rule>
       <If>
         <Compare Var="State" Value="Stage3"/>
         <Compare Var="Emotion" Value="Sadness"/>
@@ -95,7 +104,7 @@
         <Assign Var="State" Value="Stage4"/>
       </Then>
     </Rule>
-    <Rule RuleSet="em">
+    <Rule>
       <If>
         <Compare Var="State" Value="Stage3"/>
         <Compare Var="Emotion" Value="Happiness"/>
@@ -105,7 +114,7 @@
         <Assign Var="State" Value="Stage4"/>
       </Then>
     </Rule>
-    <Rule RuleSet="em">
+    <Rule>
       <If>
         <Compare Var="State" Value="Stage3"/>
       </If>

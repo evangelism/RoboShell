@@ -13,6 +13,9 @@ namespace RuleEngineNet
         public State State { get; private set; }
         public State InitialState { get; private set; }
         public List<Rule> KnowlegeBase { get; private set; }
+
+        public bool LastActionLongRunning { get; set; } = false;
+
         public RuleEngine()
         {
             State = new State();
@@ -75,15 +78,46 @@ namespace RuleEngineNet
 
         public bool Step()
         {
+            LastActionLongRunning = false;
             var cs = GetConflictSet(State);
             if (cs.Count() > 0)
             {
-                var rule = cs.First();
+                var rule = ResolveConflict(cs);
+                LastActionLongRunning = rule.Then.LongRunning;
                 rule.Then.Execute(State);
-                rule.Active = false;
+                if (rule.RuleSet==null) rule.Active = false;
+                else
+                {
+                    var t = from x in cs
+                            where (x.RuleSet != null && x.RuleSet == rule.RuleSet)
+                            select x;
+                    foreach (var x in t) x.Active = false;
+                }
                 return true;
             }
             else return false;
+        }
+
+        public bool StepUntilLongRunning()
+        {
+            bool res;
+            do
+            {
+                res = Step();
+            }
+            while (!LastActionLongRunning && res);
+            return res;
+        }
+
+        private Rule ResolveConflict(IEnumerable<Rule> cs)
+        {
+            var r = cs.First();
+            if (r.RuleSet == null) return r;
+            var rs = from x in cs
+                     where (x.RuleSet != null && x.RuleSet == r.RuleSet)
+                     select x;
+            if (rs.Count() > 0) return rs.OneOf();
+            else return r;
         }
 
         public void Run()
