@@ -21,6 +21,7 @@ using Microsoft.ProjectOxford.Face;
 using Windows.UI.Xaml.Media;
 using Windows.System;
 using Microsoft.ProjectOxford.Emotion.Contract;
+using RoboShell.LED;
 
 // Это приложение получает ваше изображение с веб-камеры и
 // распознаёт эмоции на нём, обращаясь к Cognitive Services
@@ -47,6 +48,8 @@ namespace RoboShell
 
         FaceDetectionEffect FaceDetector;
         VideoEncodingProperties VideoProps;
+
+        LEDManager LEDMgr;
 
         bool IsFacePresent = false; // Shows the short-term state of the face in camera
         bool InDialog = false; // represents long-term state - are we in dialog, or waiting for user
@@ -83,6 +86,13 @@ namespace RoboShell
             media.MediaEnded += EndSpeech;
             CoreWindow.GetForCurrentThread().KeyDown += KeyPressed;
             await Init();
+            LEDMgr = new LEDManager(canvas);
+            LEDMgr.AddLED("LE", 8, 8, 0.3, 0.2);
+            LEDMgr.AddLED("RE", 8, 8, 0.7, 0.2);
+            LEDMgr.AddLED("M",10,5,0.5,0.8);
+            LEDMgr.LEDS["LE"].Load(new LEDImage("eye_blink"));
+            LEDMgr.LEDS["RE"].Load(new LEDImage("eye_blink"));
+            LEDMgr.LEDS["M"].Load(new LEDImage("mouth_neutral"));
         }
 
         private async void EndSpeech(object sender, RoutedEventArgs e)
@@ -101,7 +111,20 @@ namespace RoboShell
             {
                 case "Recapture":
                     if (Param == "EndSpeech") CaptureAfterEnd = true;
+                    else if (Param.StartsWith("After:"))
+                    {
+                        var t = Param.Split(':');
+                        var v = double.Parse(t[1]);
+                        var dt = new DispatcherTimer() { Interval = TimeSpan.FromSeconds(v) };
+                        dt.Tick +=
+                            async (s, ea) => { dt.Stop(); await RecognizeFace(); };
+                        dt.Start();
+                    }
                     else await RecognizeFace();
+                    break;
+                case "LED":
+                    var t1 = Param.Split(':');
+                    LEDMgr.LEDS[t1[0]].Load(new LEDImage(t1[1]));
                     break;
             }
         }
@@ -153,7 +176,6 @@ namespace RoboShell
             FaceDetector.FaceDetected += FaceDetectedEvent;
             FaceDetector.DesiredDetectionInterval = TimeSpan.FromMilliseconds(100);
             FaceDetector.Enabled = true;
-            Trace($"Canvas = {canvas.Width}x{canvas.Height}");
 
             await MC.StartPreviewAsync();
             var props = MC.VideoDeviceController.GetMediaStreamProperties(MediaStreamType.VideoPreview);

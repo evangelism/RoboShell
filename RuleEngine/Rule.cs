@@ -22,6 +22,8 @@ namespace RuleEngineNet
         public int Priority { get; set; } = 100;
         public bool Active { get; set; } = true;
 
+        public string RuleSet { get; set; }
+
         public static Rule LoadXml(XElement X)
         {
             var t = (from x in X.Descendants("If").First().Elements()
@@ -34,7 +36,16 @@ namespace RuleEngineNet
             Action _then;
             if (s.Count == 1) _then = s[0];
             else _then = new CombinedAction(s);
-            return new Rule(_if, _then);
+            var R = new Rule(_if, _then);
+            if (X.Attribute("Priority")!=null)
+            {
+                R.Priority = int.Parse(X.Attribute("Priority").Value);
+            }
+            if (X.Attribute("RuleSet") != null)
+            {
+                R.RuleSet = X.Attribute("RuleSet").Value;
+            }
+            return R;
         }
 
     }

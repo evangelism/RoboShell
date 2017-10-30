@@ -23,6 +23,22 @@
     <Rule>
       <If>
         <Compare Var="Event" Value="FaceIn"/>
+      </If>
+      <Then>
+        <Extension Command="LED" Param="M:mouth_smile"/>
+      </Then>
+    </Rule>
+    <Rule>
+      <If>
+        <Compare Var="Event" Value="FaceOut"/>
+      </If>
+      <Then>
+        <Extension Command="LED" Param="M:mouth_neutral"/>
+      </Then>
+    </Rule>
+    <Rule>
+      <If>
+        <Compare Var="Event" Value="FaceIn"/>
         <Compare Var="FaceCount" Value="1"/>
       </If>
       <Then>
@@ -53,8 +69,8 @@
       </If>
       <Then>
         <Assign Var="State" Value="Stage2"/>
-        <Say Text="{Let me introduce myself. I am ${RobotName}.|I am ${RobotName}, pleased to meet you!} When you are ready to chat, press one"/>
-        <Extension Command="Recapture" Param="EndSpeech"/>
+        <Say Text="{Let me introduce myself. {I am|My name is} ${RobotName}.|I am ${RobotName}, pleased to meet you!} When you are ready to chat, press one"/>
+        <Extension Command="Recapture" Param="After:2"/>
     </Then>
     </Rule>
     <Rule>
@@ -65,7 +81,45 @@
       <Then>
         <Assign Var="State" Value="Stage3"/>
         <Clear Var="Event"/>
-        <Say Text="Oh well!"></Say>
+        <Say Text="Oh well! Why do you look so {${Emotion}:Surprise=Surprised|Anger=Angry|Happiness=Happy|Sadness=Sad|Strange}?"></Say>
+      </Then>
+    </Rule>
+    <Rule RuleSet="em">
+      <If>
+        <Compare Var="State" Value="Stage3"/>
+        <Compare Var="Emotion" Value="Sadness"/>
+      </If>
+      <Then>
+        <Extension Command="LED" Param="M:mouth_neutral"/>
+        <Say Text="Let me tell you a joke. {Do you know why there is no Windows 8? Because 7 8 9|An infinite number of mathematicians enter the bar.. Is it funny already?}"/>
+        <Assign Var="State" Value="Stage4"/>
+      </Then>
+    </Rule>
+    <Rule RuleSet="em">
+      <If>
+        <Compare Var="State" Value="Stage3"/>
+        <Compare Var="Emotion" Value="Happiness"/>
+      </If>
+      <Then>
+        <Say Text="{Actually|Believe it or not} I am glad to see that you are happy. Keep on {smiling|laughing|being that way}!"/>
+        <Assign Var="State" Value="Stage4"/>
+      </Then>
+    </Rule>
+    <Rule RuleSet="em">
+      <If>
+        <Compare Var="State" Value="Stage3"/>
+      </If>
+      <Then>
+        <Say Text="I wanted to tell you a joke, but I will not. Unless you try to cry."/>
+        <Assign Var="State" Value="Stage4"/>
+      </Then>
+    </Rule>
+    <Rule>
+      <If>
+        <Compare Var="State" Value="Stage4"/>
+      </If>
+      <Then>
+        <Say Text="It was nice chatting to you. Goodbye."/>
       </Then>
     </Rule>
   </Rules>
