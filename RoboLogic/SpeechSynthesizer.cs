@@ -18,9 +18,13 @@ namespace RoboLogic
         public SpeechSynthesizer Synthesizer = new SpeechSynthesizer();
         public MediaElement Media { get; set; }
 
-        public UWPLocalSpeaker(MediaElement Media)
+        public UWPLocalSpeaker(MediaElement Media, VoiceGender G)
         {
             this.Media = Media;
+            var v = (from x in SpeechSynthesizer.AllVoices
+                     where x.Gender == G
+                     select x).FirstOrDefault();
+            if (v != null) Synthesizer.Voice = v;
         }
 
         public async void Speak(string s)

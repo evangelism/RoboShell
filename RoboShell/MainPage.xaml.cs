@@ -76,7 +76,7 @@ namespace RoboShell
         protected async override void OnNavigatedTo(NavigationEventArgs e)
         {
             base.OnNavigatedTo(e);
-            var spk = new UWPLocalSpeaker(media);
+            var spk = new UWPLocalSpeaker(media,Windows.Media.SpeechSynthesis.VoiceGender.Male);
             Trace("Loading knowlegdebase");
             var xdoc = XDocument.Load("Robot.kb.xml");
             RE = RuleEngine.LoadXml(xdoc);

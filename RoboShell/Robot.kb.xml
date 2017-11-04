@@ -23,7 +23,10 @@
     <Rule RuleSet="boredom">
       <If Text="Event=Ping"/>
       <Then>
-        <Say Text="I am bored. Please come and talk to me!"/>
+        <OneOf>
+          <Say Text="I am bored. Please {come|stop by} and {talk to me|amuse me}!"/>
+          <Say Text="Noone is here, but I am still happy. Even happier!"/>
+        </OneOf>
         <Clear Var="Event"/>
       </Then>
     </Rule>
@@ -53,8 +56,9 @@
       <Then>
         <Assign Var="State" Value="Stage1"/>
         <OneOf>
-          <Say Text="Oh, such a {nice|cute|beautiful} {${Gender}${AgeCat}:MB=boy|MT=teenager|MA=man|MO=dedushka|FB=girl|FT=girl|FA=woman|FO=babushka}!"/>
-          <Say Text="Welcome, {${AgeCat}:B=young|T=young|A=|O=old} {${Gender}:M=man|F=lady}!"/>
+          <Say Text="Привет, ребята! Как дела?"/>
+          <!-- Say Text="Oh, such a {nice|cute|beautiful} {${Gender}${AgeCat}:MB=boy|MT=teenager|MA=man|MO=dedushka|FB=girl|FT=girl|FA=woman|FO=babushka}!"/ -->
+          <!-- Say Text="Welcome, {${AgeCat}:B=young|T=young|A=|O=old} {${Gender}:M=man|F=lady}!"/ -->
         </OneOf>
       </Then>
     </Rule>
@@ -68,7 +72,7 @@
         <OneOf>
           <Say Text="Oh, you are such a {nice|cute|beautiful} group of people!"/>
           <Say Text="Welcome, people of {earth|this planet}!"/>
-          <Say Text="Hey, {${Gender}:MF=boys|girls}"/>
+          <Say Text="Hey, {${Gender}:MF=boys|FM=girls|M=boys|F=girls|guys}"/>
         </OneOf>
       </Then>
     </Rule>
