@@ -73,7 +73,7 @@
       </Then>
     </Rule>
     <Rule>
-      <If>
+      <If> 
         <Compare Var="State" Value="Stage1"/>
       </If>
       <Then>

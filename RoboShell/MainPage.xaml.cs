@@ -67,7 +67,7 @@ namespace RoboShell
         public void Trace(string s)
         {
             System.Diagnostics.Debug.WriteLine(s);
-            log.Text += s + "\r\n";
+            if (!Config.Headless) log.Text += s + "\r\n";
         }
 
         /// <summary>
@@ -89,12 +89,15 @@ namespace RoboShell
             CoreWindow.GetForCurrentThread().KeyDown += KeyPressed;
             await Init();
             LEDMgr = new LEDManager(canvas);
-            LEDMgr.AddLED("LE", 8, 8, 0.3, 0.2);
-            LEDMgr.AddLED("RE", 8, 8, 0.7, 0.2);
-            LEDMgr.AddLED("M",10,5,0.5,0.8);
-            LEDMgr.LEDS["LE"].Load(new LEDImage("eye_blink"));
-            LEDMgr.LEDS["RE"].Load(new LEDImage("eye_blink"));
-            LEDMgr.LEDS["M"].Load(new LEDImage("mouth_neutral"));
+            if (!Config.Headless)
+            {
+                LEDMgr.AddLED("LE", 8, 8, 0.3, 0.2);
+                LEDMgr.AddLED("RE", 8, 8, 0.7, 0.2);
+                LEDMgr.AddLED("M", 10, 5, 0.5, 0.8);
+                LEDMgr.LEDS["LE"].Load(new LEDImage("eye_blink"));
+                LEDMgr.LEDS["RE"].Load(new LEDImage("eye_blink"));
+                LEDMgr.LEDS["M"].Load(new LEDImage("mouth_neutral"));
+            }
         }
 
         private async void EndSpeech(object sender, RoutedEventArgs e)
@@ -174,10 +177,14 @@ namespace RoboShell
             Trace("Initializing media...");
             MC = new MediaCapture();
             var cameras = await DeviceInformation.FindAllAsync(DeviceClass.VideoCapture);
-            var camera = cameras.First();
+            var camera = cameras.Last();
             var settings = new MediaCaptureInitializationSettings() { VideoDeviceId = camera.Id };
             await MC.InitializeAsync(settings);
-            ViewFinder.Source = MC;
+
+            if (!Config.Headless)
+            {
+                ViewFinder.Source = MC;
+            }
 
             // Create face detection
             var def = new FaceDetectionEffectDefinition();
@@ -187,8 +194,9 @@ namespace RoboShell
             FaceDetector.FaceDetected += FaceDetectedEvent;
             FaceDetector.DesiredDetectionInterval = TimeSpan.FromMilliseconds(100);
             FaceDetector.Enabled = true;
-
+            Trace("Ready to start face recognition");
             await MC.StartPreviewAsync();
+            Trace("Face Recognition Started");
             var props = MC.VideoDeviceController.GetMediaStreamProperties(MediaStreamType.VideoPreview);
             VideoProps = props as VideoEncodingProperties;
         }
@@ -209,12 +217,16 @@ namespace RoboShell
         /// <returns></returns>
         private async Task HighlightDetectedFace(DetectedFace face)
         {
-            var cx = ViewFinder.ActualWidth / VideoProps.Width;
-            var cy = ViewFinder.ActualHeight / VideoProps.Height;
+            double cx=0, cy=0;
+            if (!Config.Headless)
+            {
+                cx = ViewFinder.ActualWidth / VideoProps.Width;
+                cy = ViewFinder.ActualHeight / VideoProps.Height;
+            }
 
             if (face == null)
             {
-                FaceRect.Visibility = Visibility.Collapsed;
+                if (!Config.Headless) FaceRect.Visibility = Visibility.Collapsed;
                 FaceWaitTimer.Stop();
                 if (IsFacePresent)
                 {
@@ -225,10 +237,13 @@ namespace RoboShell
             else
             {
                 DropoutTimer.Stop();
-                FaceRect.Margin = new Thickness(cx * face.FaceBox.X, cy * face.FaceBox.Y, 0, 0);
-                FaceRect.Width = cx * face.FaceBox.Width;
-                FaceRect.Height = cy * face.FaceBox.Height;
-                FaceRect.Visibility = Visibility.Visible;
+                if (!Config.Headless)
+                {
+                    FaceRect.Margin = new Thickness(cx * face.FaceBox.X, cy * face.FaceBox.Y, 0, 0);
+                    FaceRect.Width = cx * face.FaceBox.Width;
+                    FaceRect.Height = cy * face.FaceBox.Height;
+                    FaceRect.Visibility = Visibility.Visible;
+                }
                 if (!IsFacePresent)
                 {
                     IsFacePresent = true;

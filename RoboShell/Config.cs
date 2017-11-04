@@ -15,5 +15,8 @@ namespace RoboShell
         public static bool RecognizeEmotions = true;
         public static int MinBoringSeconds = 10;
         public static int MaxBoringSeconds = 11;
+
+        public static bool Headless = false;
+
     }
 }
