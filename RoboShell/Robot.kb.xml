@@ -56,9 +56,9 @@
       <Then>
         <Assign Var="State" Value="Stage1"/>
         <OneOf>
-          <Say Text="Привет, ребята! Как дела?"/>
-          <!-- Say Text="Oh, such a {nice|cute|beautiful} {${Gender}${AgeCat}:MB=boy|MT=teenager|MA=man|MO=dedushka|FB=girl|FT=girl|FA=woman|FO=babushka}!"/ -->
-          <!-- Say Text="Welcome, {${AgeCat}:B=young|T=young|A=|O=old} {${Gender}:M=man|F=lady}!"/ -->
+          <Say Text="Привет, {землянин|двуногий|гуманоид}! Как дела {на планете|на районе|в галактике} всех {мохнатых зверюшек|животных|четвероногих друзей|попрыгунчиков} на {шубы|шапки} извел?"/>
+          <Say Text="Почеши меня, {за ушком|за уголок|где хочешь} {${Gender}${AgeCat}:MB=чувак|MT=будущий взрослый|MA=мужик|MO=дедулечка|FB=сударыня|FT=девушка|FA=очаровтельная женщина|FO=бабушка}!"/>
+          <Say Text="Заходи на поболтать, {${AgeCat}:B=молодой|T=молодая|A=|O=умудренный} {${Gender}:M=мужик|F=}!"/>
         </OneOf>
       </Then>
     </Rule>
@@ -82,7 +82,7 @@
       </If>
       <Then>
         <Assign Var="State" Value="Stage2"/>
-        <Say Text="{Let me introduce myself. My name is ${RobotName}.|I am ${RobotName}, pleased to meet you!} When you are ready to chat, press one"/>
+        <Say Text="{Let me introduce myself. Меня зовут ${RobotName}.|Я здесь ${RobotName}, всё решаю!} Хочешь поболтать, хлопни себя по лысине! Шучу, нажми один!"/>
         <Extension Command="Recapture" Param="After:2"/>
     </Then>
     </Rule>
@@ -96,7 +96,7 @@
         <Clear Var="Event"/>
         <Say Text="Oh well! Why do you look so {${Emotion}:Surprise=Surprised|Anger=Angry|Happiness=Happy|Sadness=Sad|Strange}?"></Say>
       </Then>
-    </Rule>
+    </Rule>    
     <Rule>
       <If>
         <Compare Var="State" Value="Stage3"/>
@@ -137,6 +137,6 @@
     </Rule>
   </Rules>
   <State>
-    <Var Name="RobotName" Value="Blinky the Robot"/>
+    <Var Name="RobotName" Value="Подушка вреднюшка"/>
   </State>
 </RuleEngine>
