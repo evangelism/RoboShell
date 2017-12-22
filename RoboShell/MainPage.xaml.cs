@@ -288,9 +288,32 @@ namespace RoboShell
 
             FaceWaitTimer.Stop();
 
-            var ms = new MemoryStream();
-            await MC.CapturePhotoToStreamAsync(ImageEncodingProperties.CreateJpeg(), ms.AsRandomAccessStream());
-            // now got photo captured to ms
+            var photoAsStream = new MemoryStream();
+            await MC.CapturePhotoToStreamAsync(ImageEncodingProperties.CreateJpeg(), photoAsStream.AsRandomAccessStream());
+
+            byte[] photoAsByteArray = photoAsStream.ToArray();
+
+            PhotoInfo photoInfo = await ProcessPhotoAsync(photoAsByteArray);
+
+            if (photoInfo.FoundAndProcessedFaces) {
+                RE.SetVar("FaceCount", photoInfo.FaceCountAsString);
+                RE.SetVar("Gender", photoInfo.Gender);
+                RE.SetVar("Age", photoInfo.Age);
+                if (Config.RecognizeEmotions) {
+                    RE.SetVar("Emotion", photoInfo.Emotion);
+                }
+
+                Trace($"Face data: #faces={RE.State.Eval("FaceCount")}, age={RE.State.Eval("Age")}, gender={RE.State.Eval("Gender")}, emo={RE.State.Eval("Emotion")}");
+                return true;
+            }
+            else {
+                FaceWaitTimer.Start();
+                return false;
+            }
+        }
+
+        async Task<PhotoInfo> ProcessPhotoAsync(byte[] photoAsByteArray) {
+            
             bool foundAndProcessedFaces = false;
 
             string faceCountAsString = "";
@@ -298,9 +321,7 @@ namespace RoboShell
             string age = "";
             string emotion = "";
 
-            // ------------------------------------------------------------------------
-            // that goes to cloud
-            // from here
+            MemoryStream ms = new MemoryStream(photoAsByteArray);
             ms.Position = 0L;
             var Fce = await FaceAPI.DetectAsync(ms.NewStream(), false, false, new FaceAttributeType[] { FaceAttributeType.Age, FaceAttributeType.Gender });
 
@@ -334,25 +355,24 @@ namespace RoboShell
 
                 foundAndProcessedFaces = true;
             }
-            // to here
-            // ------------------------------------------------------------------------
 
-            if (foundAndProcessedFaces) {
-                RE.SetVar("FaceCount", faceCountAsString);
-                RE.SetVar("Gender", gender);
-                RE.SetVar("Age", age);
-                if (Config.RecognizeEmotions) {
-                    RE.SetVar("Emotion", emotion);
-                }
-
-                Trace($"Face data: #faces={RE.State.Eval("FaceCount")}, age={RE.State.Eval("Age")}, gender={RE.State.Eval("Gender")}, emo={RE.State.Eval("Emotion")}");
-                return true;
-            }
-            else {
-                FaceWaitTimer.Start();
-                return false;
-            }
+            PhotoInfo photoInfo = new PhotoInfo();
+            photoInfo.Age = age;
+            photoInfo.Emotion = emotion;
+            photoInfo.FaceCountAsString = faceCountAsString;
+            photoInfo.Gender = gender;
+            photoInfo.FoundAndProcessedFaces = foundAndProcessedFaces;
+            return photoInfo;
         }
+    }
+
+
+    class PhotoInfo {
+        public string FaceCountAsString { get; set; }
+        public string Gender { get; set; }
+        public string Age { get; set; }
+        public string Emotion { get; set; }
+        public bool FoundAndProcessedFaces { get; set; }
     }
 }
 
