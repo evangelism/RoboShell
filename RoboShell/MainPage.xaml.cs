@@ -281,49 +281,74 @@ namespace RoboShell
             }
         }
 
-        async Task<bool> RecognizeFace()
-        { 
-            if (!IsFacePresent) return false;
-            FaceWaitTimer.Stop(); 
+        async Task<bool> RecognizeFace() {
+            if (!IsFacePresent) {
+                return false;
+            }
+
+            FaceWaitTimer.Stop();
+
             var ms = new MemoryStream();
             await MC.CapturePhotoToStreamAsync(ImageEncodingProperties.CreateJpeg(), ms.AsRandomAccessStream());
+            // now got photo captured to ms
+            bool foundAndProcessedFaces = false;
 
+            string faceCountAsString = "";
+            string gender = "";
+            string age = "";
+            string emotion = "";
+
+            // ------------------------------------------------------------------------
+            // that goes to cloud
+            // from here
             ms.Position = 0L;
-            var Fce = await FaceAPI.DetectAsync(ms.NewStream(),false,false,new FaceAttributeType[] { FaceAttributeType.Age, FaceAttributeType.Gender });
+            var Fce = await FaceAPI.DetectAsync(ms.NewStream(), false, false, new FaceAttributeType[] { FaceAttributeType.Age, FaceAttributeType.Gender });
 
             Emotion[] Emo = null;
 
-            if (Config.RecognizeEmotions)
-            {
+            if (Config.RecognizeEmotions) {
                 ms.Position = 0L;
                 Emo = await EmoAPI.RecognizeAsync(ms.NewStream());
             }
 
-            if (Fce != null && Fce.Length > 0)
-            {
+            if (Fce != null && Fce.Length > 0) {
                 int males = 0, females = 0, count = 0;
                 double sumage = 0;
-                foreach(var f in Fce)
-                {
+                foreach (var f in Fce) {
                     if (f.FaceAttributes.Gender == "male") males++; else females++;
                     count++;
                     sumage += f.FaceAttributes.Age++;
                 }
-                RE.SetVar("FaceCount", count.ToString());
-                if (males == 0 && females > 0) RE.SetVar("Gender", "F");
-                if (males > 0 && females == 0) RE.SetVar("Gender", "M");
-                if (males > 0 && females > 0) RE.SetVar("Gender", males > females ? "MF" : "FM");
-                RE.SetVar("Age", ((int)(sumage / count)).ToString());
-                if (Config.RecognizeEmotions)
-                {
-                    var em = Emo.Select(x=>x.Scores).AvEmotions().MainEmotion();
-                    RE.SetVar("Emotion", em.Item1);
+                faceCountAsString = count.ToString();
+
+                if (males == 0 && females > 0) gender = "F";
+                if (males > 0 && females == 0) gender = "M";
+                if (males > 0 && females > 0) gender = males > females ? "MF" : "FM";
+
+                age = ((int)(sumage / count)).ToString();
+
+                if (Config.RecognizeEmotions) {
+                    var em = Emo.Select(x => x.Scores).AvEmotions().MainEmotion();
+                    emotion = em.Item1;
                 }
+
+                foundAndProcessedFaces = true;
+            }
+            // to here
+            // ------------------------------------------------------------------------
+
+            if (foundAndProcessedFaces) {
+                RE.SetVar("FaceCount", faceCountAsString);
+                RE.SetVar("Gender", gender);
+                RE.SetVar("Age", age);
+                if (Config.RecognizeEmotions) {
+                    RE.SetVar("Emotion", emotion);
+                }
+
                 Trace($"Face data: #faces={RE.State.Eval("FaceCount")}, age={RE.State.Eval("Age")}, gender={RE.State.Eval("Gender")}, emo={RE.State.Eval("Emotion")}");
                 return true;
             }
-            else
-            {
+            else {
                 FaceWaitTimer.Start();
                 return false;
             }
