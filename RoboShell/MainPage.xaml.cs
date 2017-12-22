@@ -22,6 +22,9 @@ using Windows.UI.Xaml.Media;
 using Windows.System;
 using Microsoft.ProjectOxford.Emotion.Contract;
 using RoboShell.LED;
+using System.Net.Http;
+using System.Text;
+using System.Net;
 
 // Это приложение получает ваше изображение с веб-камеры и
 // распознаёт эмоции на нём, обращаясь к Cognitive Services
@@ -41,10 +44,9 @@ namespace RoboShell
         DispatcherTimer FaceWaitTimer = new DispatcherTimer() { Interval = TimeSpan.FromSeconds(2) };
         DispatcherTimer DropoutTimer = new DispatcherTimer() { Interval = TimeSpan.FromSeconds(3) };
         DispatcherTimer InferenceTimer = new DispatcherTimer() { Interval = TimeSpan.FromSeconds(1) };
+        
 
-        EmotionServiceClient EmoAPI = new EmotionServiceClient(Config.EmotionAPIKey,Config.EmotionAPIEndpoint);
-        FaceServiceClient FaceAPI = new FaceServiceClient(Config.FaceAPIKey,Config.FaceAPIEndpoint);
-
+        private static HttpClient httpClient = new HttpClient();
 
         FaceDetectionEffect FaceDetector;
         VideoEncodingProperties VideoProps;
@@ -293,7 +295,7 @@ namespace RoboShell
 
             byte[] photoAsByteArray = photoAsStream.ToArray();
 
-            PhotoInfo photoInfo = await ProcessPhotoAsync(photoAsByteArray, Config.RecognizeEmotions);
+            PhotoInfoDTO photoInfo = await ProcessPhotoAsync(photoAsByteArray, Config.RecognizeEmotions);
 
             if (photoInfo.FoundAndProcessedFaces) {
                 RE.SetVar("FaceCount", photoInfo.FaceCountAsString);
@@ -312,64 +314,47 @@ namespace RoboShell
             }
         }
 
-        async Task<PhotoInfo> ProcessPhotoAsync(byte[] photoAsByteArray, bool recognizeEmotions) {
-            
-            bool foundAndProcessedFaces = false;
-
-            string faceCountAsString = "";
-            string gender = "";
-            string age = "";
-            string emotion = "";
-
-            MemoryStream ms = new MemoryStream(photoAsByteArray);
-            ms.Position = 0L;
-            var Fce = await FaceAPI.DetectAsync(ms.NewStream(), false, false, new FaceAttributeType[] { FaceAttributeType.Age, FaceAttributeType.Gender });
-
-            Emotion[] Emo = null;
-
-            if (recognizeEmotions) {
-                ms.Position = 0L;
-                Emo = await EmoAPI.RecognizeAsync(ms.NewStream());
-            }
-
-            if (Fce != null && Fce.Length > 0) {
-                int males = 0, females = 0, count = 0;
-                double sumage = 0;
-                foreach (var f in Fce) {
-                    if (f.FaceAttributes.Gender == "male") males++; else females++;
-                    count++;
-                    sumage += f.FaceAttributes.Age++;
-                }
-                faceCountAsString = count.ToString();
-
-                if (males == 0 && females > 0) gender = "F";
-                if (males > 0 && females == 0) gender = "M";
-                if (males > 0 && females > 0) gender = males > females ? "MF" : "FM";
-
-                age = ((int)(sumage / count)).ToString();
-
-                if (recognizeEmotions) {
-                    var em = Emo.Select(x => x.Scores).AvEmotions().MainEmotion();
-                    emotion = em.Item1;
-                }
-
-                foundAndProcessedFaces = true;
-            }
-
-            PhotoInfo photoInfo = new PhotoInfo {
-                Age = age,
-                Emotion = emotion,
-                FaceCountAsString = faceCountAsString,
-                Gender = gender,
-                FoundAndProcessedFaces = foundAndProcessedFaces
+        async Task<PhotoInfoDTO> ProcessPhotoAsync(byte[] photoAsByteArray, bool recognizeEmotions) {
+            PhotoToProcessDTO photoToProcessDTO = new PhotoToProcessDTO {
+                PhotoAsByteArray = photoAsByteArray,
+                RecognizeEmotions = recognizeEmotions
             };
+            var json = JsonConvert.SerializeObject(photoToProcessDTO);
 
-            return photoInfo;
+            PhotoInfoDTO photoInfoDTO;
+
+            using (StringContent content = new StringContent(json.ToString(), Encoding.UTF8, "application/json")){
+                try {
+                    HttpResponseMessage response = await httpClient.PostAsync(Config.CognitiveEndpoint, content);
+                    if (response.StatusCode.Equals(HttpStatusCode.OK)) {
+                        Trace("Faces found and analyzed");
+                        photoInfoDTO = JsonConvert.DeserializeObject<PhotoInfoDTO>(await response.Content.ReadAsStringAsync());
+                    }
+                    else {
+                        Trace("No faces found nor analyzed");
+                        photoInfoDTO = new PhotoInfoDTO {
+                            FoundAndProcessedFaces = false
+                        };
+                    }
+                } catch (Exception e) {
+                    Trace("Error! Exception message: " + e.Message);
+                    photoInfoDTO = new PhotoInfoDTO {
+                        FoundAndProcessedFaces = false
+                    };
+                }
+                
+            }
+           
+            return photoInfoDTO;
         }
     }
 
+    class PhotoToProcessDTO {
+        public byte[] PhotoAsByteArray { get; set; }
+        public bool RecognizeEmotions { get; set; }
+    }
 
-    class PhotoInfo {
+    class PhotoInfoDTO {
         public string FaceCountAsString { get; set; }
         public string Gender { get; set; }
         public string Age { get; set; }
