@@ -293,7 +293,7 @@ namespace RoboShell
 
             byte[] photoAsByteArray = photoAsStream.ToArray();
 
-            PhotoInfo photoInfo = await ProcessPhotoAsync(photoAsByteArray);
+            PhotoInfo photoInfo = await ProcessPhotoAsync(photoAsByteArray, Config.RecognizeEmotions);
 
             if (photoInfo.FoundAndProcessedFaces) {
                 RE.SetVar("FaceCount", photoInfo.FaceCountAsString);
@@ -312,7 +312,7 @@ namespace RoboShell
             }
         }
 
-        async Task<PhotoInfo> ProcessPhotoAsync(byte[] photoAsByteArray) {
+        async Task<PhotoInfo> ProcessPhotoAsync(byte[] photoAsByteArray, bool recognizeEmotions) {
             
             bool foundAndProcessedFaces = false;
 
@@ -327,7 +327,7 @@ namespace RoboShell
 
             Emotion[] Emo = null;
 
-            if (Config.RecognizeEmotions) {
+            if (recognizeEmotions) {
                 ms.Position = 0L;
                 Emo = await EmoAPI.RecognizeAsync(ms.NewStream());
             }
@@ -348,7 +348,7 @@ namespace RoboShell
 
                 age = ((int)(sumage / count)).ToString();
 
-                if (Config.RecognizeEmotions) {
+                if (recognizeEmotions) {
                     var em = Emo.Select(x => x.Scores).AvEmotions().MainEmotion();
                     emotion = em.Item1;
                 }
@@ -356,12 +356,14 @@ namespace RoboShell
                 foundAndProcessedFaces = true;
             }
 
-            PhotoInfo photoInfo = new PhotoInfo();
-            photoInfo.Age = age;
-            photoInfo.Emotion = emotion;
-            photoInfo.FaceCountAsString = faceCountAsString;
-            photoInfo.Gender = gender;
-            photoInfo.FoundAndProcessedFaces = foundAndProcessedFaces;
+            PhotoInfo photoInfo = new PhotoInfo {
+                Age = age,
+                Emotion = emotion,
+                FaceCountAsString = faceCountAsString,
+                Gender = gender,
+                FoundAndProcessedFaces = foundAndProcessedFaces
+            };
+
             return photoInfo;
         }
     }
