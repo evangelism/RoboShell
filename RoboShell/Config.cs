@@ -8,7 +8,7 @@ namespace RoboShell
 {
     public static class Config
     {
-        public static string CognitiveEndpoint = "http://localhost:7071/api/PhotosAnalyzer";
+        public static string CognitiveEndpoint = "https://roboshellcognitivelogic.azurewebsites.net/api/PhotosAnalyzer";
         public static bool RecognizeEmotions = true;
         public static int MinBoringSeconds = 10;
         public static int MaxBoringSeconds = 11;
