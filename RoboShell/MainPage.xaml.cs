@@ -327,11 +327,10 @@ namespace RoboShell
                 try {
                     HttpResponseMessage response = await httpClient.PostAsync(Config.CognitiveEndpoint, content);
                     if (response.StatusCode.Equals(HttpStatusCode.OK)) {
-                        Trace("Faces found and analyzed");
                         photoInfoDTO = JsonConvert.DeserializeObject<PhotoInfoDTO>(await response.Content.ReadAsStringAsync());
                     }
                     else {
-                        Trace("No faces found nor analyzed");
+                        Trace("No faces found and analyzed");
                         photoInfoDTO = new PhotoInfoDTO {
                             FoundAndProcessedFaces = false
                         };
