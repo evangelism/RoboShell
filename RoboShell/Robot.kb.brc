@@ -18,8 +18,21 @@ State = "Stage1"
 ($Event == "FaceOut") => (ext:LED "M:mouth_neutral")
 
 
+(($Event == "FaceIn") and ($FaceCount == 1)) => (
+    (State = "Stage1") and
+    (   (say "Oh, such a {nice|cute|beautiful} {${Gender}${AgeCat}:MB=boy|MT=teenager|MA=man|MO=dedushka|FB=girl|FT=girl|FA=woman|FO=babushka}!") or
+        (say "Welcome, {${AgeCat}:B=young|T=young|A=|O=old} {${Gender}:M=man|F=lady}!")
+    )
+)
 
 
+(($Event == "FaceIn") and ($FaceCount > 1)) => (
+    (State = "Stage1") and
+    (   (say "Oh, you are such a {nice|cute|beautiful} group of people!") or
+        (say "Welcome, people of {earth|this planet}!") or
+        (say "Hey, {${Gender}:MF=boys|FM=girls|M=boys|F=girls|guys}")
+    )
+)
 
 ($State == "Stage1") => (
     (State = "Stage2") and
