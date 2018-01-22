@@ -9,6 +9,8 @@ using System.Text;
 using System.Net.Http.Headers;
 using Newtonsoft.Json.Linq;
 using System;
+using System.Collections.Generic;
+using System.Drawing;
 using Microsoft.Azure.Documents.Client;
 using Microsoft.Azure.Documents;
 
@@ -27,10 +29,10 @@ namespace RoboShellCognitiveLogic {
                 PhotoToProcessDTO photoToProcessDTO = JsonConvert.DeserializeObject<PhotoToProcessDTO>(
                     await req.Content.ReadAsStringAsync());
 
-                PhotoInfoDTO photoInfo = await ProcessPhotoAsync(photoToProcessDTO.PhotoAsByteArray,
+                PhotoInfoDTO photoInfo = ProcessPhotoAsync(photoToProcessDTO.PhotoAsByteArray,
                     photoToProcessDTO.RecognizeEmotions, log);
 
-                await SaveToDatabase(photoInfo, log);
+                //await SaveToDatabase(photoInfo, log);
 
                 var json = JsonConvert.SerializeObject(photoInfo);
                 response = new HttpResponseMessage(HttpStatusCode.OK) {
@@ -48,7 +50,7 @@ namespace RoboShellCognitiveLogic {
         }
 
 
-        public static async Task<PhotoInfoDTO> ProcessPhotoAsync(byte[] photoAsByteArray, bool recognizeEmotions,
+        public static PhotoInfoDTO ProcessPhotoAsync(byte[] photoAsByteArray, bool recognizeEmotions,
             TraceWriter log) {
 
             HttpClient client = new HttpClient();
@@ -93,24 +95,46 @@ namespace RoboShellCognitiveLogic {
             return photoInfo;
         }
 
-        public static async Task<string> RecognizeEmotionsAsync(HttpClient client, byte[] photoAsByteArray) {
+        public static async Task<Tuple<string, List<Dictionary<string, double>>>> RecognizeEmotionsAsync(HttpClient client, byte[] photoAsByteArray) {
             string emotionsAPIResponse = await PhotoAPICall(client, Config.EmotionAPIEndpoint, Config.EmotionAPIKey,
                 photoAsByteArray);
 
-            JToken rootToken = JArray.Parse(emotionsAPIResponse).First;
+            List<Dictionary<string, double>> allEmotions = new List<Dictionary<string, double>>();
 
-            JEnumerable<JToken> emotionsScoresList = rootToken.Last.First.Children();
+            foreach (JToken rootToken in JArray.Parse(emotionsAPIResponse))
+            {
+                Dictionary<string, double> currentEmotions = new Dictionary<string, double>();
+                JEnumerable<JToken> emotionsScoresList = rootToken.Last.First.Children();
 
-            string emotion = "";
-            double maximalScore = 0;
-            foreach (var emotionScore in emotionsScoresList) {
-                if (emotionScore.First.Value<double>() > maximalScore) {
-                    maximalScore = emotionScore.First.Value<double>();
-                    emotion = emotionScore.Value<JProperty>().Name;
+                foreach (var emotionScore in emotionsScoresList) {
+                    currentEmotions.Add(emotionScore.Value<JProperty>().Name, emotionScore.First.Value<double>());
+                }
+                allEmotions.Add(currentEmotions);
+            }
+
+            Dictionary<string, double> allEmotionsAggregated = new Dictionary<string, double>();
+            foreach (string key in allEmotions[0].Keys){
+                allEmotionsAggregated.Add(key, 0d);
+            }
+
+            foreach (Dictionary<string, double> dict in allEmotions) {
+                foreach (string key in dict.Keys){
+                    allEmotionsAggregated[key] += dict[key];
                 }
             }
 
-            return emotion;
+            double maximalScore = 0;
+            string emotion = "";
+
+            foreach (string key in allEmotionsAggregated.Keys) {
+                if (allEmotionsAggregated[key] > maximalScore) {
+                    maximalScore = allEmotionsAggregated[key];
+                    emotion = key;
+                }
+            }
+            
+
+            return new Tuple<string, List<Dictionary<string, double>>>(emotion, allEmotions);
         }
 
         public static async Task<FaceAPIInfoDTO> AnalyzeFacesAsync(HttpClient client, byte[] photoAsByteArray){
@@ -125,6 +149,7 @@ namespace RoboShellCognitiveLogic {
             JArray faces = JArray.Parse(faceAPIResponse);
             int males = 0, females = 0, faceCount = 0;
             double sumage = 0;
+            List<Rectangle> faceRectangles = new List<Rectangle>();
             foreach (JToken face in faces) {
                 faceCount++;
 
@@ -132,6 +157,21 @@ namespace RoboShellCognitiveLogic {
                 else females++;
 
                 sumage += face.SelectToken("faceAttributes").SelectToken("age").Value<double>();
+
+                Rectangle faceRectangle = new Rectangle
+                {
+                    Width = face.SelectToken("faceRectangle").SelectToken("width").Value<int>(),
+                    Height = face.SelectToken("faceRectangle").SelectToken("height").Value<int>(),
+                    X = face.SelectToken("faceRectangle").SelectToken("left").Value<int>(),
+                    Y = face.SelectToken("faceRectangle").SelectToken("top").Value<int>()
+                };
+                SingleFaceFaceAPIInfoDTO singleFaceInfoDto = new SingleFaceFaceAPIInfoDTO();
+
+                singleFaceInfoDto.FaceRectangle = faceRectangle;
+                singleFaceInfoDto.Age = face.SelectToken("faceAttributes").SelectToken("age")
+                    .Value<double>();
+                singleFaceInfoDto.Gender = face.SelectToken("faceAttributes").SelectToken("gender")
+                    .ToString();
             }
 
             if (males == 0 && females > 0) gender = "F";
@@ -208,5 +248,13 @@ namespace RoboShellCognitiveLogic {
         public string Gender { get; set; }
         public string Age { get; set; }
         public bool FoundAndProcessedFaces { get; set; }
+        public List<SingleFaceFaceAPIInfoDTO> SingleFacesInfo { get; set; }
+    }
+
+    public class SingleFaceFaceAPIInfoDTO {
+        public double Age { get; set; }
+        public string Gender { get; set; }
+        public string Emotion { get; set; }
+        public Rectangle FaceRectangle { get; set; }
     }
 }
