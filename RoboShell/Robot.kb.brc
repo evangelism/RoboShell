@@ -1,0 +1,66 @@
+﻿RobotName = "Подушка вреднюшка"
+State = "Stage1"
+
+((priority = 50) (($Age in [0,10]) => (AgeCat = "B")))
+((priority = 50) (($Age in [11,18]) => (AgeCat = "T")))
+((priority = 50) (($Age in [19,50]) => (AgeCat = "A")))
+((priority = 50) (($Age in [51,999]) => (AgeCat = "O")))
+
+((rule_set = "boredom")
+(($Event == "Ping") => (
+    (   (say "I am bored. Please {come|stop by} and {talk to me|amuse me}!") or
+        (say "Noone is here, but I am still happy. Even happier!")
+    ) and
+    (clear $Event)
+)))
+
+($Event == "FaceIn") => (ext:LED "M:mouth_smile")
+($Event == "FaceOut") => (ext:LED "M:mouth_neutral")
+
+
+(($Event == "FaceIn") and ($FaceCount == 1)) => (
+    (State = "Stage1") and
+    (   (say "Oh, such a {nice|cute|beautiful} {${Gender}${AgeCat}:MB=boy|MT=teenager|MA=man|MO=dedushka|FB=girl|FT=girl|FA=woman|FO=babushka}!") or
+        (say "Welcome, {${AgeCat}:B=young|T=young|A=|O=old} {${Gender}:M=man|F=lady}!")
+    )
+)
+
+
+(($Event == "FaceIn") and ($FaceCount > 1)) => (
+    (State = "Stage1") and
+    (   (say "Oh, you are such a {nice|cute|beautiful} group of people!") or
+        (say "Welcome, people of {earth|this planet}!") or
+        (say "Hey, {${Gender}:MF=boys|FM=girls|M=boys|F=girls|guys}")
+    )
+)
+
+($State == "Stage1") => (
+    (State = "Stage2") and
+    (say "{Let me introduce myself. Меня зовут ${RobotName}.|Я здесь ${RobotName}, всё решаю!} Хочешь поболтать, хлопни себя по лысине! Шучу, нажми один!") and
+    (ext:Recapture "After:2")
+)
+
+(($State == "Stage2") and ($Event == "Key_1")) => (
+    (State = "Stage3") and
+    (clear $Event) and
+    (say "Oh well! Why do you look so {${Emotion}:Surprise=Surprised|Anger=Angry|Happiness=Happy|Sadness=Sad|Strange}?")
+)
+
+(($State == "Stage3") and ($Emotion == "Sadness")) => (
+    (ext:LED "M:mouth_neutral") and
+    (say "Let me tell you a joke. {Do you know why there is no Windows 8? Because 7 8 9|An infinite number of mathematicians enter the bar.. Is it funny already?}") and
+    (State = "Stage4")
+)
+
+(($State == "Stage3") and ($Emotion == "Happiness")) => (
+    (ext:LED "M:mouth_neutral") and
+    (say "{Actually|Believe it or not} I am glad to see that you are happy. Keep on {smiling|laughing|being that way}!") and
+    (State = "Stage4")
+)
+
+($State == "Stage3") => (
+    (say "I wanted to tell you a joke, but I will not. Unless you try to cry.") and
+    (State = "Stage4")
+)
+
+($State == "Stage4") => (say "It was nice chatting to you. Goodbye.")
