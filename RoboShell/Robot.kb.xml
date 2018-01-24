@@ -30,6 +30,9 @@
         <Clear Var="Event"/>
       </Then>
     </Rule>
+
+    
+    
     
     <!-- Process FaceIn Event -->
     <Rule>
@@ -48,6 +51,29 @@
         <Extension Command="LED" Param="M:mouth_neutral"/>
       </Then>
     </Rule>
+
+    <Rule>
+      <If>
+        <Compare Var="Event" Value="Green_button"/>
+      </If>
+      <Then>
+        <Clear Var="Event"/>
+        <Say Text="Проверка зеленой кнопки."/>
+        <GPIO Signal="1,0,1,0,1,0" Time="3000"></GPIO>
+      </Then>
+    </Rule>
+
+    <Rule>
+      <If>
+        <Compare Var="Event" Value="Key_0"/>
+      </If>
+      <Then>
+        <Clear Var="Event"/>
+        <Say Text="Проверка сигнала."/>
+        <GPIO Signal="1,0,1,0,1,0" Time="3000"></GPIO>
+      </Then>
+    </Rule>
+
     <Rule>
       <If>
         <Compare Var="Event" Value="FaceIn"/>

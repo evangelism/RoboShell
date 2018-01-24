@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.26730.16
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RoboShell", "RoboShell\RoboShell.csproj", "{B0230505-2B45-43DC-BF90-7CEE01AB8B12}"
 EndProject
@@ -23,6 +23,7 @@ Global
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{B0230505-2B45-43DC-BF90-7CEE01AB8B12}.Debug|Any CPU.ActiveCfg = Debug|x86
 		{B0230505-2B45-43DC-BF90-7CEE01AB8B12}.Debug|Any CPU.Build.0 = Debug|x86
+		{B0230505-2B45-43DC-BF90-7CEE01AB8B12}.Debug|Any CPU.Deploy.0 = Debug|x86
 		{B0230505-2B45-43DC-BF90-7CEE01AB8B12}.Debug|ARM.ActiveCfg = Debug|ARM
 		{B0230505-2B45-43DC-BF90-7CEE01AB8B12}.Debug|ARM.Build.0 = Debug|ARM
 		{B0230505-2B45-43DC-BF90-7CEE01AB8B12}.Debug|ARM.Deploy.0 = Debug|ARM
@@ -77,5 +78,8 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {EE241707-D06A-4031-A8E7-7B71223EDB34}
 	EndGlobalSection
 EndGlobal

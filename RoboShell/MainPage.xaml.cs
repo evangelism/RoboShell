@@ -22,6 +22,7 @@ using Windows.UI.Xaml.Media;
 using Windows.System;
 using Microsoft.ProjectOxford.Emotion.Contract;
 using RoboShell.LED;
+using Windows.Devices.Gpio;
 
 // Это приложение получает ваше изображение с веб-камеры и
 // распознаёт эмоции на нём, обращаясь к Cognitive Services
@@ -33,6 +34,8 @@ using RoboShell.LED;
 
 namespace RoboShell
 {
+    
+
     public sealed partial class MainPage : Page
     {
 
@@ -41,6 +44,7 @@ namespace RoboShell
         DispatcherTimer FaceWaitTimer = new DispatcherTimer() { Interval = TimeSpan.FromSeconds(2) };
         DispatcherTimer DropoutTimer = new DispatcherTimer() { Interval = TimeSpan.FromSeconds(3) };
         DispatcherTimer InferenceTimer = new DispatcherTimer() { Interval = TimeSpan.FromSeconds(1) };
+        
 
         EmotionServiceClient EmoAPI = new EmotionServiceClient(Config.EmotionAPIKey,Config.EmotionAPIEndpoint);
         FaceServiceClient FaceAPI = new FaceServiceClient(Config.FaceAPIKey,Config.FaceAPIEndpoint);
@@ -50,6 +54,37 @@ namespace RoboShell
         VideoEncodingProperties VideoProps;
 
         LEDManager LEDMgr;
+
+        private const int GB_PIN = 5; //good-green
+        private const int RB_PIN = 6; //bad-red
+        private const int YB_PIN = 26;//neutral-yellow
+        private GpioPin greenButton;
+        private GpioPin redButton;
+        private GpioPin yellowButton;
+        DispatcherTimer GpioTimer = new DispatcherTimer() { Interval = TimeSpan.FromMilliseconds(500) };
+        private GpioPinValue greenButtonValue;
+
+        private GpioPinValue redButtonValue;
+        private GpioPinValue yellowButtonValue;
+        // maybe we could use lists?
+        private void InitGpio()
+        {
+            var gpio = GpioController.GetDefault();
+
+            if (gpio == null)
+            {
+                return;
+            }
+            greenButton = gpio.OpenPin(GB_PIN);
+            redButton = gpio.OpenPin(RB_PIN);
+            yellowButton = gpio.OpenPin(YB_PIN);
+
+            greenButton.SetDriveMode(GpioPinDriveMode.Input);
+            redButton.SetDriveMode(GpioPinDriveMode.Input);
+            yellowButton.SetDriveMode(GpioPinDriveMode.Input);
+            Trace($"Gpio initialized correctly.");
+
+        }
 
         bool IsFacePresent = false; // Shows the short-term state of the face in camera
         bool InDialog = false; // represents long-term state - are we in dialog, or waiting for user
@@ -63,6 +98,8 @@ namespace RoboShell
         {
             this.InitializeComponent();
         }
+
+        
 
         public void Trace(string s)
         {
@@ -85,6 +122,11 @@ namespace RoboShell
             FaceWaitTimer.Tick += StartDialog;
             DropoutTimer.Tick += FaceDropout;
             InferenceTimer.Tick += InferenceStep;
+
+            GpioTimer.Tick += ButtonPressed;
+            InitGpio();
+            GpioTimer.Start();
+
             media.MediaEnded += EndSpeech;
             CoreWindow.GetForCurrentThread().KeyDown += KeyPressed;
             await Init();
@@ -134,6 +176,33 @@ namespace RoboShell
             }
         }
 
+        private void ButtonPressed(object sender, object e)
+        {
+            yellowButtonValue = yellowButton.Read();
+            greenButtonValue = greenButton.Read();
+            redButtonValue = redButton.Read();
+            //if (redButtonValue == GpioPinValue.Low)
+            //{
+            //    var st = "Red_button";
+            //    Trace($"Initiating event {st}");
+            //    RE.SetVar("Event", st);
+            //    RE.Step();
+            //}
+            //else if (yellowButtonValue == GpioPinValue.Low)
+            //{
+            //    var st = "Yellow_button";
+            //    Trace($"Initiating event {st}");
+            //    RE.SetVar("Event", st);
+            //    RE.Step();
+            //}
+            /*else*/ if (greenButtonValue == GpioPinValue.Low)
+            {
+                var st = "Green_button";
+                Trace($"Initiating event {st}");
+                RE.SetVar("Event", st);
+                RE.Step();
+            }
+        }
         private void KeyPressed(CoreWindow sender, KeyEventArgs args)
         {
             if (args.VirtualKey >= VirtualKey.Number0 &&
@@ -327,6 +396,13 @@ namespace RoboShell
                 FaceWaitTimer.Start();
                 return false;
             }
+        }
+
+        private void MainPage_Unloaded(object sender, object args)
+        {
+            yellowButton.Dispose();
+            greenButton.Dispose();
+            redButton.Dispose();
         }
     }
 }

@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Linq;
+using Windows.Devices.Gpio;
 
 namespace RuleEngineNet
 {
@@ -26,6 +27,8 @@ namespace RuleEngineNet
                     return Extension.Parse(X);
                 case "OneOf":
                     return new OneOf(from z in X.Elements() select Action.LoadXml(z));
+                case "GPIO":
+                    return GPIO.Parse(X);
                 default:
                     throw new RuleEngineException("Unsupported action type");
             }
@@ -135,6 +138,7 @@ namespace RuleEngineNet
         public override void Execute(State S)
         {
             Speaker.Speak(S.EvalString(Text));
+            System.Diagnostics.Debug.WriteLine(S.EvalString(Text));
         }
 
         public static Say Parse(XElement X)
@@ -168,4 +172,64 @@ namespace RuleEngineNet
         }
     }
 
+    public class GPIO : Action
+    {
+
+        public List<int> Signal { get; set; }
+        public int Time;
+        private List<int> pinsNums = new List<int>() { 17, 27, 22, 23, 24, 25 };
+        public GPIO(IEnumerable<int> signal, int time)
+        {
+            this.Signal = new List<int>(signal);
+            this.Time = time;
+        }
+
+        public override void Execute(State S)
+        {
+            var gpio = GpioController.GetDefault();
+            if (gpio == null)
+            {
+
+                return;
+            }
+            List<GpioPin> pins = new List<GpioPin>();
+            //GpioPin pin;
+            foreach(var num in pinsNums)
+            {
+                var pin = gpio.OpenPin(num);
+                pin.Write(GpioPinValue.High);
+                pin.SetDriveMode(GpioPinDriveMode.Output);
+                pins.Add(pin);
+            }
+
+            long startTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+            for (int i = 0; i < 6; ++i)
+            {
+                if (Signal[i] == 1)
+                    pins[i].Write(GpioPinValue.Low);
+            }
+            while (DateTimeOffset.Now.ToUnixTimeMilliseconds() - startTime < Time) { }
+            foreach (var pin in pins)
+            {
+
+                pin.Write(GpioPinValue.High);
+                pin.Dispose();
+            }
+         
+            return;
+        }
+
+        public static GPIO Parse(XElement X)
+        {
+            try
+            {
+                return new GPIO(X.Attribute("Signal").Value.Split(',', ' ').Select(Int32.Parse).ToList(),
+                    Int32.Parse(X.Attribute("Time").Value));
+            }
+            catch
+            {
+                throw new RuleEngineException("Error converting string to number");
+            }
+        }
+    }
 }
