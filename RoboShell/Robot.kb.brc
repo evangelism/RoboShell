@@ -17,6 +17,7 @@ State = "Stage1"
 ($Event == "FaceIn") => (ext:LED "M:mouth_smile")
 ($Event == "FaceOut") => (ext:LED "M:mouth_neutral")
 
+($Event == "Key_0") => (GPIO 1,0,1,1,0 3000)
 
 (($Event == "FaceIn") and ($FaceCount == 1)) => (
     (State = "Stage1") and

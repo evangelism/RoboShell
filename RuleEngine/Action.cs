@@ -6,6 +6,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Xml.Linq;
+using Windows.Devices.Gpio;
 using RuleEngineNet;
 
 namespace RuleEngineNet
@@ -117,6 +118,7 @@ namespace RuleEngineNet
                 $"^(?<var>{BracketedConfigProcessor.VARNAME_REGEX_PATTERN})\\s*=\\s*(?<value>\\S+)$";
             string CLEAR_REGEX = $"^clear\\s+\\$(?<var>{BracketedConfigProcessor.VARNAME_REGEX_PATTERN})$";
             string SAY_REGEX = $"^say\\s+\".*\"$";
+            string GPIO_REGEX = $"^GPIO\\s+(?<signal>([10],)*[10])\\s+(?<time>\\d+)$";
             string EXTERNAL_ACTION_NAME_REGEX_PATTERN = BracketedConfigProcessor.VARNAME_REGEX_PATTERN;
             string EXTERNAL_REGEX =
                 $"^ext:(?<method>{EXTERNAL_ACTION_NAME_REGEX_PATTERN})\\s+\".*\"$";
@@ -155,6 +157,13 @@ namespace RuleEngineNet
 
                     action = new Say(possibleString);
                     //Console.WriteLine($"parsed {actionSequence} as say {possibleString}");
+                }
+                else if (Regex.IsMatch(prettyActionSequence, GPIO_REGEX))
+                {
+                    Match m = Regex.Match(prettyActionSequence, GPIO_REGEX);
+                    if (m.Length == 0) throw new ActionParseException();
+                    action = new GPIO(m.Groups["signal"].Value.Split(',', ' ').Select(Int32.Parse).ToList(),
+                        Int32.Parse(m.Groups["time"].Value));
                 }
                 else if (Regex.IsMatch(prettyActionSequence, EXTERNAL_REGEX)) {
                     int firstQuotePosition = prettyActionSequence.IndexOf("\"");
@@ -323,6 +332,57 @@ namespace RuleEngineNet
         {
             if (X.Attribute("Param")==null) return new Extension(X.Attribute("Command").Value);
             else return new Extension(X.Attribute("Command").Value, X.Attribute("Param").Value);
+        }
+    }
+
+    public class GPIO : Action {
+
+        public List<int> Signal { get; set; }
+        public int Time;
+        private List<int> pinsNums = new List<int>() { 17, 27, 22, 23, 24, 25 };
+        public GPIO(IEnumerable<int> signal, int time) {
+            this.Signal = new List<int>(signal);
+            this.Time = time;
+        }
+
+        public override void Execute(State S) {
+            var gpio = GpioController.GetDefault();
+            if (gpio == null) {
+
+                return;
+            }
+            List<GpioPin> pins = new List<GpioPin>();
+            //GpioPin pin;
+            foreach (var num in pinsNums) {
+                var pin = gpio.OpenPin(num);
+                pin.Write(GpioPinValue.High);
+                pin.SetDriveMode(GpioPinDriveMode.Output);
+                pins.Add(pin);
+            }
+
+            long startTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+            for (int i = 0; i < 6; ++i) {
+                if (Signal[i] == 1)
+                    pins[i].Write(GpioPinValue.Low);
+            }
+            while (DateTimeOffset.Now.ToUnixTimeMilliseconds() - startTime < Time) { }
+            foreach (var pin in pins) {
+
+                pin.Write(GpioPinValue.High);
+                pin.Dispose();
+            }
+
+            return;
+        }
+
+        public static GPIO Parse(XElement X) {
+            try {
+                return new GPIO(X.Attribute("Signal").Value.Split(',', ' ').Select(Int32.Parse).ToList(),
+                    Int32.Parse(X.Attribute("Time").Value));
+            }
+            catch {
+                throw new RuleEngineException("Error converting string to number");
+            }
         }
     }
 
