@@ -120,6 +120,7 @@ namespace RuleEngineNet
                 $"^(?<var>{BracketedConfigProcessor.VARNAME_REGEX_PATTERN})\\s*=\\s*(?<value>\\S+)$";
             string CLEAR_REGEX = $"^clear\\s+\\$(?<var>{BracketedConfigProcessor.VARNAME_REGEX_PATTERN})$";
             string SAY_REGEX = $"^say\\s+\".*\"$";
+            string GPIO_REGEX = $"^GPIO\\s+(?<signal>([10],)*[10])\\s+(?<time>\\d+)$";
             string EXTERNAL_ACTION_NAME_REGEX_PATTERN = BracketedConfigProcessor.VARNAME_REGEX_PATTERN;
             string EXTERNAL_REGEX =
                 $"^ext:(?<method>{EXTERNAL_ACTION_NAME_REGEX_PATTERN})\\s+\".*\"$";
@@ -158,6 +159,13 @@ namespace RuleEngineNet
 
                     action = new Say(possibleString);
                     //Console.WriteLine($"parsed {actionSequence} as say {possibleString}");
+                }
+                else if (Regex.IsMatch(prettyActionSequence, GPIO_REGEX))
+                {
+                    Match m = Regex.Match(prettyActionSequence, GPIO_REGEX);
+                    if (m.Length == 0) throw new ActionParseException();
+                    action = new GPIO(m.Groups["signal"].Value.Split(',', ' ').Select(Int32.Parse).ToList(),
+                        Int32.Parse(m.Groups["time"].Value));
                 }
                 else if (Regex.IsMatch(prettyActionSequence, EXTERNAL_REGEX)) {
                     int firstQuotePosition = prettyActionSequence.IndexOf("\"");
