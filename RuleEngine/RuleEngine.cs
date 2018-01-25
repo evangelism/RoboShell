@@ -105,11 +105,29 @@ namespace RuleEngineNet
         {
             var r = cs.First();
             if (r.RuleSet == null) return r;
-            var rs = from x in cs
+            var rs = (from x in cs
                      where (x.RuleSet != null && x.RuleSet == r.RuleSet)
-                     select x;
-            if (rs.Count() > 0) return rs.OneOf();
-            else return r;
+                     select x).ToList();
+
+            Rule res;
+            if (rs.Any())
+            {
+                var rules = (from x in rs where x.ExecutedAlready == false select x).ToList();
+                var lastExecuted = (from x in rs where x.ExecutedAlready select x).ToList();
+                if (rs.Count() == lastExecuted.Count()) {
+                    foreach (var executedRule in lastExecuted){
+                        executedRule.ExecutedAlready = false;
+                    }
+                }
+
+                res = rules.Any() ? rules.OneOf() : rs.OneOf();
+            }
+            else {
+                res = r;
+            }
+
+            res.ExecutedAlready = true;
+            return res;
         }
 
         public void Run()

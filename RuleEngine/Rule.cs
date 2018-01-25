@@ -23,6 +23,7 @@ namespace RuleEngineNet
         public bool ExecutionFlag { get; set; } = false;
         public int Priority { get; set; } = 100;
         public bool Active { get; set; } = true;
+        public bool ExecutedAlready { get; set; } = false;
 
         public string RuleSet { get; set; }
 
