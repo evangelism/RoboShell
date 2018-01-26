@@ -22,7 +22,7 @@ namespace RoboLogic
         {
             this.Media = Media;
             var v = (from x in SpeechSynthesizer.AllVoices
-                     where x.Gender == G
+                     where (x.Gender == G && x.Language == "ru-RU")
                      select x).FirstOrDefault();
             if (v != null) Synthesizer.Voice = v;
         }
