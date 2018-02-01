@@ -23,6 +23,7 @@ using Windows.System;
 using Microsoft.ProjectOxford.Emotion.Contract;
 using RoboShell.LED;
 using Windows.Devices.Gpio;
+using System.Collections.Generic;
 
 // Это приложение получает ваше изображение с веб-камеры и
 // распознаёт эмоции на нём, обращаясь к Cognitive Services
@@ -44,7 +45,8 @@ namespace RoboShell
         DispatcherTimer FaceWaitTimer = new DispatcherTimer() { Interval = TimeSpan.FromSeconds(2) };
         DispatcherTimer DropoutTimer = new DispatcherTimer() { Interval = TimeSpan.FromSeconds(3) };
         DispatcherTimer InferenceTimer = new DispatcherTimer() { Interval = TimeSpan.FromSeconds(1) };
-        
+        DispatcherTimer GpioTimer = new DispatcherTimer() { Interval = TimeSpan.FromMilliseconds(500) };
+        DispatcherTimer ArduinoInputTimer = new DispatcherTimer() { Interval = TimeSpan.FromMilliseconds(5) };
 
         EmotionServiceClient EmoAPI = new EmotionServiceClient(Config.EmotionAPIKey,Config.EmotionAPIEndpoint);
         FaceServiceClient FaceAPI = new FaceServiceClient(Config.FaceAPIKey,Config.FaceAPIEndpoint);
@@ -58,19 +60,24 @@ namespace RoboShell
         private const int GB_PIN = 5; //good-green
         private const int RB_PIN = 6; //bad-red
         private const int YB_PIN = 26;//neutral-yellow
+        private const int ARD_PINS_COUNT = 4; // count of pins to input from arduino
+
         private GpioPin greenButton;
         private GpioPin redButton;
         private GpioPin yellowButton;
-        DispatcherTimer GpioTimer = new DispatcherTimer() { Interval = TimeSpan.FromMilliseconds(500) };
+        private GpioPin[] ArduinoPins;
+        private readonly int[] ArduinoPinsNumbers = { 1, 2, 3, 4 }; //must change
         private GpioPinValue greenButtonValue;
-
         private GpioPinValue redButtonValue;
         private GpioPinValue yellowButtonValue;
+        
+        
+
         // maybe we could use lists?
         private void InitGpio()
         {
             var gpio = GpioController.GetDefault();
-
+            ArduinoPins = new GpioPin[ARD_PINS_COUNT];
             if (gpio == null)
             {
                 return;
@@ -78,6 +85,12 @@ namespace RoboShell
             greenButton = gpio.OpenPin(GB_PIN);
             redButton = gpio.OpenPin(RB_PIN);
             yellowButton = gpio.OpenPin(YB_PIN);
+
+            for(int i = 0; i < ARD_PINS_COUNT; i++)
+            {
+                ArduinoPins[i] = gpio.OpenPin(ArduinoPinsNumbers[i]);
+                ArduinoPins[i].SetDriveMode(GpioPinDriveMode.Input);
+            }
 
             greenButton.SetDriveMode(GpioPinDriveMode.Input);
             redButton.SetDriveMode(GpioPinDriveMode.Input);
@@ -124,8 +137,8 @@ namespace RoboShell
             FaceWaitTimer.Tick += StartDialog;
             DropoutTimer.Tick += FaceDropout;
             InferenceTimer.Tick += InferenceStep;
-
             GpioTimer.Tick += ButtonPressed;
+            ArduinoInputTimer.Tick += ArduinoInput;
             InitGpio();
             GpioTimer.Start();
 
@@ -176,6 +189,23 @@ namespace RoboShell
                     LEDMgr.LEDS[t1[0]].Load(new LEDImage(t1[1]));
                     break;
             }
+        }
+
+        private void ArduinoInput(object sender, object e)
+        {
+            string input = "";
+            for (int i = 0; i < ARD_PINS_COUNT; ++i)
+            {
+                if (ArduinoPins[i].Read() == GpioPinValue.Low)
+                {
+                    input += "1";
+                } else
+                {
+                    input += "0";
+                }
+            }
+            Trace($"Arduino input: {input}");
+            RE.SetVar("ArduinoInput", input);
         }
 
         private void ButtonPressed(object sender, object e)
