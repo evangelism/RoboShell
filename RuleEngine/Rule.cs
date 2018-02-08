@@ -114,18 +114,18 @@ namespace RuleEngineNet
             // TODO check arrow-containing expr or act
             while (true) {
                 int tryingArrowPosition = arrowsPositions[tryingArrowPositionIndex];
-
+                int firstSymbolAfterArrowPosition = tryingArrowPosition + 2;
+                int possibleActionStringLength = ruleContainingString.Length - firstSymbolAfterArrowPosition;
+                Expression expr = null;
                 try {
-                    int firstSymbolAfterArrowPosition = tryingArrowPosition + 2;
-                    int possibleActionStringLength =
-                        ruleContainingString.Length - firstSymbolAfterArrowPosition;
+                    expr = Expression.ParseExpressionsSequence(ruleContainingString.Substring(0, tryingArrowPosition));
+                }
+                catch {
+                    tryingArrowPositionIndex++;
+                }
 
-                    Expression expr =
-                        Expression.ParseExpressionsSequence(
-                            ruleContainingString.Substring(0, tryingArrowPosition));
-                    Action act = Action.ParseActionSequence(
-                        ruleContainingString.Substring(firstSymbolAfterArrowPosition,
-                            possibleActionStringLength));
+                Action act = Action.ParseActionSequence(ruleContainingString.Substring(firstSymbolAfterArrowPosition, possibleActionStringLength));
+                if (act != null) {
                     rule = new Rule(expr, act);
                     if (rule_set != null) {
                         rule.RuleSet = rule_set;
@@ -138,10 +138,11 @@ namespace RuleEngineNet
 //                    Console.WriteLine($"PARSED: {oldRuleContainingString}");
                     return rule;
                 }
-                catch {
+                else {
                     tryingArrowPositionIndex++;
-                    continue;
                 }
+                
+                
             }
 
             throw new RuleParseException();

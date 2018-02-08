@@ -9,16 +9,17 @@ using System.Xml.Linq;
 using Windows.Devices.Gpio;
 using RuleEngineNet;
 
-namespace RuleEngineNet
-{
-    public abstract class Action
-    {
+// ReSharper disable StringLastIndexOfIsCultureSpecific.1
+
+// ReSharper disable StringIndexOfIsCultureSpecific.1
+
+namespace RuleEngineNet {
+    public abstract class Action {
         public abstract void Execute(State S);
         public virtual bool LongRunning { get; } = false;
-        public static Action LoadXml(XElement X)
-        {
-            switch(X.Name.LocalName)
-            {
+
+        public static Action LoadXml(XElement X) {
+            switch (X.Name.LocalName) {
                 case "Assign":
                     return Assign.Parse(X);
                 case "Clear":
@@ -37,91 +38,67 @@ namespace RuleEngineNet
         }
 
         public static Action ParseActionSequence(string actionsSequence) {
+            // ReSharper disable once RedundantAssignment
             Action action = null;
 
-            try {
-                action = ParseAtomicAction(actionsSequence);
-                return action;
-            }
-            catch {
+            action = ParseAtomicAction(actionsSequence);
+            if (action == null) {
                 int firstOpeningBracePosition = actionsSequence.IndexOf("(");
-                int[] closingBracesPositions =
-                    BracketedConfigProcessor.AllIndexesOf(actionsSequence, ")");
-                if (firstOpeningBracePosition != -1 && closingBracesPositions.Length == 0) {
-                    throw new ActionParseException();
-                }
-
-                if (closingBracesPositions.Length > 0) {
-                    for (int tryingClosingBraceIndex = 0;
-                        tryingClosingBraceIndex != closingBracesPositions.Length;
-                        tryingClosingBraceIndex++) {
-                        try {
+                int[] closingBracesPositions = BracketedConfigProcessor.AllIndexesOf(actionsSequence, ")");
+                if (firstOpeningBracePosition == -1 || closingBracesPositions.Length != 0) {
+                    if (closingBracesPositions.Length > 0) {
+                        for (int tryingClosingBraceIndex = 0; tryingClosingBraceIndex != closingBracesPositions.Length; tryingClosingBraceIndex++) {
                             int possibleExpression1Start = firstOpeningBracePosition + 1;
-                            int possibleAction1End =
-                                closingBracesPositions[tryingClosingBraceIndex];
-                            int possibleExpression1Length =
-                                possibleAction1End - possibleExpression1Start;
+                            int possibleAction1End = closingBracesPositions[tryingClosingBraceIndex];
+                            int possibleExpression1Length = possibleAction1End - possibleExpression1Start;
 
-                            string possibleAction1Substring =
-                                actionsSequence.Substring(possibleExpression1Start,
-                                    possibleExpression1Length);
+                            string possibleAction1Substring = actionsSequence.Substring(possibleExpression1Start, possibleExpression1Length);
                             Action action1 = ParseActionSequence(possibleAction1Substring);
 
                             string restOfString = actionsSequence.Substring(possibleAction1End);
 
                             if (!Regex.IsMatch(restOfString, @"^\s*\)\s*$")) {
                                 if (Regex.IsMatch(restOfString, @"^\s*\)\s*(and|AND).+$")) {
-                                    string possibleAction2Substring =
-                                        restOfString.Substring(
-                                            restOfString.IndexOf("and") + "and".Length);
+                                    string possibleAction2Substring = restOfString.Substring(restOfString.IndexOf("and") + "and".Length);
                                     Action action2 = ParseActionSequence(possibleAction2Substring);
-                                    if (action1 == null || action2 == null)
-                                        throw new ActionParseException();
-                                    action = new CombinedAction(
-                                        new List<Action> { action1, action2 });
+                                    if (action1 != null && action2 != null) {
+                                        action = new CombinedAction(new List<Action> {action1, action2});
+                                    }
                                 }
                                 else if (Regex.IsMatch(restOfString, @"^\s*\)\s*(or|OR).+$")) {
-                                    string possibleAction2Substring =
-                                        restOfString.Substring(
-                                            restOfString.IndexOf("or") + "or".Length);
+                                    string possibleAction2Substring = restOfString.Substring(restOfString.IndexOf("or") + "or".Length);
                                     Action action2 = ParseActionSequence(possibleAction2Substring);
-                                    if (action1 == null || action2 == null)
-                                        throw new ActionParseException();
-                                    action = new OneOf(new List<Action> { action1, action2 });
+                                    if (action1 != null && action2 != null) {
+                                        action = new OneOf(new List<Action> {action1, action2});
+                                    }
                                 }
-                                else {
-                                    throw new ActionParseException();
-                                }
-
-                                break;
                             }
                             else {
                                 action = action1;
                             }
 
-                            break;
+                            if (action != null) {
+                                break;
+                            }
                         }
-                        catch {
-                        }
-                    }
-
-                    if (action == null) {
-                        throw new ActionParseException();
                     }
                 }
-
-                return action;
             }
+
+            return action;
         }
 
         private static Action ParseAtomicAction(string actionSequence) {
-            string ASSIGNEMENT_STRING_REGEX = $"^(?<var>{BracketedConfigProcessor.VARNAME_REGEX_PATTERN})\\s*=\\s*\\\"(?<value>\\S+)\\\"$";
+            string ASSIGNEMENT_STRING_REGEX =
+                $"^(?<var>{BracketedConfigProcessor.VARNAME_REGEX_PATTERN})\\s*=\\s*\\\"(?<value>\\S+)\\\"$";
             string ASSIGNEMENT_REGEX =
                 $"^(?<var>{BracketedConfigProcessor.VARNAME_REGEX_PATTERN})\\s*=\\s*(?<value>\\S+)$";
-            string CLEAR_REGEX = $"^clear\\s+\\$(?<var>{BracketedConfigProcessor.VARNAME_REGEX_PATTERN})$";
+            string CLEAR_REGEX =
+                $"^clear\\s+\\$(?<var>{BracketedConfigProcessor.VARNAME_REGEX_PATTERN})$";
             string SAY_REGEX = $"^say\\s+\".*\"$";
             string GPIO_REGEX = $"^GPIO\\s+(?<signal>([10],)*[10])\\s+(?<time>\\d+)$";
-            string EXTERNAL_ACTION_NAME_REGEX_PATTERN = BracketedConfigProcessor.VARNAME_REGEX_PATTERN;
+            string EXTERNAL_ACTION_NAME_REGEX_PATTERN =
+                BracketedConfigProcessor.VARNAME_REGEX_PATTERN;
             string EXTERNAL_REGEX =
                 $"^ext:(?<method>{EXTERNAL_ACTION_NAME_REGEX_PATTERN})\\s+\".*\"$";
             Action action = null;
@@ -130,24 +107,21 @@ namespace RuleEngineNet
             try {
                 if (Regex.IsMatch(prettyActionSequence, ASSIGNEMENT_STRING_REGEX)) {
                     Match m = Regex.Match(prettyActionSequence, ASSIGNEMENT_STRING_REGEX);
-                    if (m.Length == 0) throw new ActionParseException();
-
-                    action = new Assign(m.Groups["var"].Value, m.Groups["value"].Value);
-                    //Console.WriteLine($"parsed {actionSequence} as assignement {m.Groups["var"].Value}:={m.Groups["value"].Value}");
+                    if (m.Length != 0) {
+                        action = new Assign(m.Groups["var"].Value, m.Groups["value"].Value);
+                    }
                 }
                 else if (Regex.IsMatch(prettyActionSequence, ASSIGNEMENT_REGEX)) {
                     Match m = Regex.Match(prettyActionSequence, ASSIGNEMENT_REGEX);
-                    if (m.Length == 0) throw new ActionParseException();
-
-                    action = new Assign(m.Groups["var"].Value, m.Groups["value"].Value);
-                    //Console.WriteLine($"parsed {actionSequence} as assignement {m.Groups["var"].Value}:={m.Groups["value"].Value}");
+                    if (m.Length != 0) {
+                        action = new Assign(m.Groups["var"].Value, m.Groups["value"].Value);
+                    }
                 }
                 else if (Regex.IsMatch(prettyActionSequence, CLEAR_REGEX)) {
                     Match m = Regex.Match(prettyActionSequence, CLEAR_REGEX);
-                    if (m.Length == 0) throw new ActionParseException();
-
-                    action = new Clear(m.Groups["var"].Value);
-                    //Console.WriteLine($"parsed {actionSequence} as clear {m.Groups["var"].Value}");
+                    if (m.Length != 0) {
+                        action = new Clear(m.Groups["var"].Value);
+                    }
                 }
                 else if (Regex.IsMatch(prettyActionSequence, SAY_REGEX)) {
                     int firstQuotePosition = prettyActionSequence.IndexOf("\"");
@@ -158,14 +132,13 @@ namespace RuleEngineNet
                     BracketedConfigProcessor.AssertValidString(possibleString);
 
                     action = new Say(possibleString);
-                    //Console.WriteLine($"parsed {actionSequence} as say {possibleString}");
                 }
-                else if (Regex.IsMatch(prettyActionSequence, GPIO_REGEX))
-                {
+                else if (Regex.IsMatch(prettyActionSequence, GPIO_REGEX)) {
                     Match m = Regex.Match(prettyActionSequence, GPIO_REGEX);
-                    if (m.Length == 0) throw new ActionParseException();
-                    action = new GPIO(m.Groups["signal"].Value.Split(',', ' ').Select(Int32.Parse).ToList(),
-                        Int32.Parse(m.Groups["time"].Value));
+                    if (m.Length != 0) {
+                        action = new GPIO(m.Groups["signal"].Value.Split(',', ' ')
+                            .Select(Int32.Parse).ToList(), Int32.Parse(m.Groups["time"].Value));
+                    }
                 }
                 else if (Regex.IsMatch(prettyActionSequence, EXTERNAL_REGEX)) {
                     int firstQuotePosition = prettyActionSequence.IndexOf("\"");
@@ -176,192 +149,158 @@ namespace RuleEngineNet
                     BracketedConfigProcessor.AssertValidString(possibleString);
 
                     Match m = Regex.Match(prettyActionSequence, EXTERNAL_REGEX);
-                    if (m.Length == 0) throw new ActionParseException();
-
-                    action = new Extension(m.Groups["method"].Value, possibleString);
-                    //Console.WriteLine($"parsed {actionSequence} as external {m.Groups["method"].Value} {possibleString}");
+                    if (m.Length != 0) {
+                        action = new Extension(m.Groups["method"].Value, possibleString);
+                    }
                 }
-                else {
-                    throw new ActionParseException();
-                }
-
-                if (action == null) {
-                    throw new ActionParseException();
-                }
-
-                return action;
             }
             catch {
-                throw new ActionParseException();
+                action = null;
             }
+
+            return action;
         }
     }
 
-    internal class ActionParseException : Exception
-    {
-    }
+//    internal class ActionParseException : Exception
+//    {
+//    }
 
-    public class Assign : Action
-    {
+    public class Assign : Action {
         public string Var { get; set; }
         public Expression Expr { get; set; }
         public string Value { get; set; }
 
-        public Assign(string Var, string Value)
-        {
-            this.Value = Value; this.Var = Var;
+        public Assign(string Var, string Value) {
+            this.Value = Value;
+            this.Var = Var;
         }
 
-        public override void Execute(State S)
-        {
+        public override void Execute(State S) {
             if (Expr != null) S.Assign(Var, Expr.Eval(S));
             if (Value != null) S.Assign(Var, S.EvalString(Value));
         }
 
-        public static Assign Parse(XElement X)
-        {
+        public static Assign Parse(XElement X) {
             return new Assign(X.Attribute("Var").Value, X.Attribute("Value").Value);
         }
-
     }
 
-    public class Clear : Action
-    {
+    public class Clear : Action {
         public string Var { get; set; }
-        public Clear(string Var)
-        { this.Var = Var; }
 
-        public override void Execute(State S)
-        {
+        public Clear(string Var) {
+            this.Var = Var;
+        }
+
+        public override void Execute(State S) {
             S.Remove(Var);
         }
 
-        public static Clear Parse(XElement X)
-        {
+        public static Clear Parse(XElement X) {
             return new Clear(X.Attribute("Var").Value);
         }
-
     }
 
-    public class CombinedAction : Action
-    {
+    public class CombinedAction : Action {
         public List<Action> Actions { get; set; }
-        public override void Execute(State S)
-        {
+
+        public override void Execute(State S) {
             foreach (var x in Actions)
                 x.Execute(S);
         }
 
         protected bool? long_running;
-        public override bool LongRunning
-        {
-            get
-            {
+
+        public override bool LongRunning {
+            get {
                 if (long_running.HasValue) return long_running.Value;
                 long_running = false;
-                foreach(var a in Actions)
-                {
-                    if (a.LongRunning)
-                    {
+                foreach (var a in Actions) {
+                    if (a.LongRunning) {
                         long_running = true;
                         break;
                     }
                 }
+
                 return long_running.Value;
             }
         }
 
-        public CombinedAction(IEnumerable<Action> Actions)
-        {
+        public CombinedAction(IEnumerable<Action> Actions) {
             this.Actions = new List<Action>(Actions);
         }
     }
 
-    public class OneOf : CombinedAction
-    {
+    public class OneOf : CombinedAction {
         public OneOf(IEnumerable<Action> Actions) : base(Actions) { }
 
-        public override void Execute(State S)
-        {
+        public override void Execute(State S) {
             Actions.OneOf().Execute(S);
         }
-
     }
 
-    public class Say : Action
-    {
+    public class Say : Action {
         public static ISpeaker Speaker { get; set; }
 
         public string Text { get; set; }
 
-        public Say(string Text)
-        {
-            this.Text=Text;
+        public Say(string Text) {
+            this.Text = Text;
         }
 
         public override bool LongRunning => true;
 
-        public override void Execute(State S)
-        {
+        public override void Execute(State S) {
             Speaker.Speak(S.EvalString(Text));
             System.Diagnostics.Debug.WriteLine(S.EvalString(Text));
         }
 
-        public static Say Parse(XElement X)
-        {
+        public static Say Parse(XElement X) {
             return new Say(X.Attribute("Text").Value);
         }
     }
 
-    public class Extension : Action
-    {
-        public static Action<string,string> Executor { get; set; }
+    public class Extension : Action {
+        public static Action<string, string> Executor { get; set; }
 
         public string Command { get; set; }
         public string Param { get; set; }
 
-        public Extension(string Cmd, string Param = null)
-        {
+        public Extension(string Cmd, string Param = null) {
             this.Command = Cmd;
             this.Param = Param;
         }
 
-        public override void Execute(State S)
-        {
-            Executor(Command,Param);
+        public override void Execute(State S) {
+            Executor(Command, Param);
         }
 
-        public static Extension Parse(XElement X)
-        {
-            if (X.Attribute("Param")==null) return new Extension(X.Attribute("Command").Value);
+        public static Extension Parse(XElement X) {
+            if (X.Attribute("Param") == null) return new Extension(X.Attribute("Command").Value);
             else return new Extension(X.Attribute("Command").Value, X.Attribute("Param").Value);
         }
     }
 
-    public class GPIO : Action
-    {
-
+    public class GPIO : Action {
         public List<int> Signal { get; set; }
         public int Time;
-        private List<int> pinsNums = new List<int>() { 17, 27, 22, 23, 24, 25 };
-        public GPIO(IEnumerable<int> signal, int time)
-        {
+        private List<int> pinsNums = new List<int>() {17, 27, 22, 23, 24, 25};
+
+        public GPIO(IEnumerable<int> signal, int time) {
             this.Signal = new List<int>(signal);
             this.Time = time;
         }
 
-        public override void Execute(State S)
-        {
+        public override void Execute(State S) {
             var gpio = GpioController.GetDefault();
-            if (gpio == null)
-            {
-
+            if (gpio == null) {
                 return;
             }
+
             List<GpioPin> pins = new List<GpioPin>();
             //GpioPin pin;
-            foreach(var num in pinsNums)
-            {
+            foreach (var num in pinsNums) {
                 var pin = gpio.OpenPin(num);
                 pin.Write(GpioPinValue.High);
                 pin.SetDriveMode(GpioPinDriveMode.Output);
@@ -369,31 +308,28 @@ namespace RuleEngineNet
             }
 
             long startTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
-            for (int i = 0; i < 6; ++i)
-            {
+            for (int i = 0; i < 6; ++i) {
                 if (Signal[i] == 1)
                     pins[i].Write(GpioPinValue.Low);
             }
-            while (DateTimeOffset.Now.ToUnixTimeMilliseconds() - startTime < Time) { }
-            foreach (var pin in pins)
-            {
 
+            while (DateTimeOffset.Now.ToUnixTimeMilliseconds() - startTime < Time) { }
+
+            foreach (var pin in pins) {
                 pin.Write(GpioPinValue.High);
                 pin.Dispose();
             }
-         
+
             return;
         }
 
-        public static GPIO Parse(XElement X)
-        {
-            try
-            {
-                return new GPIO(X.Attribute("Signal").Value.Split(',', ' ').Select(Int32.Parse).ToList(),
+        public static GPIO Parse(XElement X) {
+            try {
+                return new GPIO(
+                    X.Attribute("Signal").Value.Split(',', ' ').Select(Int32.Parse).ToList(),
                     Int32.Parse(X.Attribute("Time").Value));
             }
-            catch
-            {
+            catch {
                 throw new RuleEngineException("Error converting string to number");
             }
         }
