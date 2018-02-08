@@ -39,6 +39,7 @@ namespace RuleEngineNet
         public void SetSpeaker(ISpeaker spk)
         {
             Say.Speaker = spk;
+            Play.Speaker = spk;
         }
 
         public void SetExecutor(Action<string,string> Executor)

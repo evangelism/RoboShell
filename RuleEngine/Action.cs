@@ -25,6 +25,8 @@ namespace RuleEngineNet
                     return Clear.Parse(X);
                 case "Say":
                     return Say.Parse(X);
+                case "Play":
+                    return Play.Parse(X);
                 case "Extension":
                     return Extension.Parse(X);
                 case "OneOf":
@@ -124,6 +126,7 @@ namespace RuleEngineNet
             string EXTERNAL_ACTION_NAME_REGEX_PATTERN = BracketedConfigProcessor.VARNAME_REGEX_PATTERN;
             string EXTERNAL_REGEX =
                 $"^ext:(?<method>{EXTERNAL_ACTION_NAME_REGEX_PATTERN})\\s+\".*\"$";
+            string PLAY_REGEX = $"^play\\s+\".*\"$";
             Action action = null;
 
             string prettyActionSequence = actionSequence.Trim();
@@ -158,7 +161,17 @@ namespace RuleEngineNet
                     BracketedConfigProcessor.AssertValidString(possibleString);
 
                     action = new Say(possibleString);
-                    //Console.WriteLine($"parsed {actionSequence} as say {possibleString}");
+                }
+                else if (Regex.IsMatch(prettyActionSequence, PLAY_REGEX))
+                {
+                    int firstQuotePosition = prettyActionSequence.IndexOf("\"");
+                    int lastQuotePosition = prettyActionSequence.LastIndexOf("\"");
+                    int start = firstQuotePosition + 1;
+                    int len = lastQuotePosition - start;
+                    string possibleString = prettyActionSequence.Substring(start, len);
+                    BracketedConfigProcessor.AssertValidString(possibleString);
+
+                    action = new Play(possibleString);
                 }
                 else if (Regex.IsMatch(prettyActionSequence, GPIO_REGEX))
                 {
@@ -312,6 +325,34 @@ namespace RuleEngineNet
             return new Say(X.Attribute("Text").Value);
         }
     }
+
+
+    public class Play : Action
+    {
+        private const string WAV_PATH_PREFIX = "ms-appx:///Sounds/";
+        public static ISpeaker Speaker { get; set; }
+
+        public Uri FileName { get; set; }//TODO type
+
+        public Play(string filename)
+        {
+            this.FileName = new Uri(WAV_PATH_PREFIX + filename);
+        }
+
+        public override bool LongRunning => true;
+
+
+        public override void Execute(State S)
+        {
+            Speaker.Play(FileName);
+        }
+
+        public static Play Parse(XElement X) {
+            return new Play(X.Attribute("FileName").Value);
+        }
+
+    }
+    
 
     public class Extension : Action
     {
