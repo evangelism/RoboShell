@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -116,26 +117,17 @@ namespace RuleEngineNet
                 int tryingArrowPosition = arrowsPositions[tryingArrowPositionIndex];
                 int firstSymbolAfterArrowPosition = tryingArrowPosition + 2;
                 int possibleActionStringLength = ruleContainingString.Length - firstSymbolAfterArrowPosition;
-                Expression expr = null;
-                try {
-                    expr = Expression.ParseExpressionsSequence(ruleContainingString.Substring(0, tryingArrowPosition));
-                }
-                catch {
-                    tryingArrowPositionIndex++;
-                }
-
+                Expression expr = Expression.ParseExpressionsSequence(ruleContainingString.Substring(0, tryingArrowPosition));
                 Action act = Action.ParseActionSequence(ruleContainingString.Substring(firstSymbolAfterArrowPosition, possibleActionStringLength));
-                if (act != null) {
+                if (expr != null && act != null) {
                     rule = new Rule(expr, act);
                     if (rule_set != null) {
                         rule.RuleSet = rule_set;
                     }
-
                     if (priority != null) {
                         rule.Priority = Int32.Parse(priority);
                     }
 
-//                    Console.WriteLine($"PARSED: {oldRuleContainingString}");
                     return rule;
                 }
                 else {
@@ -145,7 +137,6 @@ namespace RuleEngineNet
                 
             }
 
-            throw new RuleParseException();
         }
     }
 }

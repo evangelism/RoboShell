@@ -52,33 +52,38 @@ namespace RuleEngineNet {
                             int possibleAction1End = closingBracesPositions[tryingClosingBraceIndex];
                             int possibleExpression1Length = possibleAction1End - possibleExpression1Start;
 
-                            string possibleAction1Substring = actionsSequence.Substring(possibleExpression1Start, possibleExpression1Length);
-                            Action action1 = ParseActionSequence(possibleAction1Substring);
+                            Action action1 = null;
+                            if (possibleExpression1Length > 0) {
+                                string possibleAction1Substring = actionsSequence.Substring(possibleExpression1Start, possibleExpression1Length);
+                                action1 = ParseActionSequence(possibleAction1Substring);
+                            }
+                            if (action1 != null) {
+                                string restOfString = actionsSequence.Substring(possibleAction1End);
 
-                            string restOfString = actionsSequence.Substring(possibleAction1End);
-
-                            if (!Regex.IsMatch(restOfString, @"^\s*\)\s*$")) {
-                                if (Regex.IsMatch(restOfString, @"^\s*\)\s*(and|AND).+$")) {
-                                    string possibleAction2Substring = restOfString.Substring(restOfString.IndexOf("and") + "and".Length);
-                                    Action action2 = ParseActionSequence(possibleAction2Substring);
-                                    if (action1 != null && action2 != null) {
-                                        action = new CombinedAction(new List<Action> {action1, action2});
+                                if (!Regex.IsMatch(restOfString, @"^\s*\)\s*$")) {
+                                    if (Regex.IsMatch(restOfString, @"^\s*\)\s*(and|AND).+$")) {
+                                        string possibleAction2Substring =
+                                            restOfString.Substring(restOfString.IndexOf("and") + "and".Length);
+                                        Action action2 = ParseActionSequence(possibleAction2Substring);
+                                        if (action1 != null && action2 != null) {
+                                            action = new CombinedAction(new List<Action> {action1, action2});
+                                        }
+                                    }
+                                    else if (Regex.IsMatch(restOfString, @"^\s*\)\s*(or|OR).+$")) {
+                                        string possibleAction2Substring = restOfString.Substring(restOfString.IndexOf("or") + "or".Length);
+                                        Action action2 = ParseActionSequence(possibleAction2Substring);
+                                        if (action1 != null && action2 != null) {
+                                            action = new OneOf(new List<Action> {action1, action2});
+                                        }
                                     }
                                 }
-                                else if (Regex.IsMatch(restOfString, @"^\s*\)\s*(or|OR).+$")) {
-                                    string possibleAction2Substring = restOfString.Substring(restOfString.IndexOf("or") + "or".Length);
-                                    Action action2 = ParseActionSequence(possibleAction2Substring);
-                                    if (action1 != null && action2 != null) {
-                                        action = new OneOf(new List<Action> {action1, action2});
-                                    }
+                                else {
+                                    action = action1;
                                 }
-                            }
-                            else {
-                                action = action1;
-                            }
 
-                            if (action != null) {
-                                break;
+                                if (action != null) {
+                                    break;
+                                }
                             }
                         }
                     }
@@ -129,9 +134,9 @@ namespace RuleEngineNet {
                     int start = firstQuotePosition + 1;
                     int len = lastQuotePosition - start;
                     string possibleString = prettyActionSequence.Substring(start, len);
-                    BracketedConfigProcessor.AssertValidString(possibleString);
-
-                    action = new Say(possibleString);
+                    if (BracketedConfigProcessor.AssertValidString(possibleString)) {
+                        action = new Say(possibleString);
+                    }
                 }
                 else if (Regex.IsMatch(prettyActionSequence, GPIO_REGEX)) {
                     Match m = Regex.Match(prettyActionSequence, GPIO_REGEX);
@@ -146,11 +151,11 @@ namespace RuleEngineNet {
                     int start = firstQuotePosition + 1;
                     int len = lastQuotePosition - start;
                     string possibleString = prettyActionSequence.Substring(start, len);
-                    BracketedConfigProcessor.AssertValidString(possibleString);
-
-                    Match m = Regex.Match(prettyActionSequence, EXTERNAL_REGEX);
-                    if (m.Length != 0) {
-                        action = new Extension(m.Groups["method"].Value, possibleString);
+                    if (BracketedConfigProcessor.AssertValidString(possibleString)) {
+                        Match m = Regex.Match(prettyActionSequence, EXTERNAL_REGEX);
+                        if (m.Length != 0) {
+                            action = new Extension(m.Groups["method"].Value, possibleString);
+                        }
                     }
                 }
             }
