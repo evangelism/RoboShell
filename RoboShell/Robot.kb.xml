@@ -52,7 +52,7 @@
       </Then>
     </Rule>
 
-    <Rule>
+    <!--<Rule>
       <If>
         <Compare Var="Event" Value="Green_button"/>
       </If>
@@ -61,7 +61,7 @@
         <Say Text="Проверка зеленой кнопки."/>
         <GPIO Signal="1,0,1,0,1,0" Time="3000"></GPIO>
       </Then>
-    </Rule>
+    </Rule>-->
 
     <Rule>
       <If>

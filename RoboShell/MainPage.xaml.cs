@@ -66,7 +66,7 @@ namespace RoboShell
         private GpioPin redButton;
         private GpioPin yellowButton;
         private GpioPin[] ArduinoPins;
-        private readonly int[] ArduinoPinsNumbers = { 1, 2, 3, 4 }; //must change
+        private readonly int[] ArduinoPinsNumbers = {12, 16, 20, 21}; //must change
         private GpioPinValue greenButtonValue;
         private GpioPinValue redButtonValue;
         private GpioPinValue yellowButtonValue;
@@ -128,10 +128,10 @@ namespace RoboShell
             base.OnNavigatedTo(e);
             var spk = new UWPLocalSpeaker(media,Windows.Media.SpeechSynthesis.VoiceGender.Female);
             Trace("Loading knowlegdebase");
-//            var xdoc = XDocument.Load("Robot.kb.xml");
-//            RE = XMLRuleEngine.LoadXml(xdoc);
-            var filename = "Robot.kb.brc";
-            RE = BracketedRuleEngine.LoadBracketedKb(filename);
+            var xdoc = XDocument.Load("Robot.kb.xml");
+            RE = XMLRuleEngine.LoadXml(xdoc);
+            //var filename = "Robot.kb.brc";
+           // RE = BracketedRuleEngine.LoadBracketedKb(filename);
             RE.SetSpeaker(spk);
             RE.SetExecutor(ExExecutor);
             FaceWaitTimer.Tick += StartDialog;
@@ -227,13 +227,13 @@ namespace RoboShell
             //    RE.SetVar("Event", st);
             //    RE.Step();
             //}
-            /*else*/ if (greenButtonValue == GpioPinValue.Low)
-            {
-                var st = "Green_button";
-                Trace($"Initiating event {st}");
-                RE.SetVar("Event", st);
-                RE.Step();
-            }
+            ///*else*/ if (greenButtonValue == GpioPinValue.Low)
+            //{
+            //    var st = "Green_button";
+            //    Trace($"Initiating event {st}");
+            //    RE.SetVar("Event", st);
+            //    RE.Step();
+            //}
         }
         private void KeyPressed(CoreWindow sender, KeyEventArgs args)
         {
