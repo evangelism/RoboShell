@@ -26,6 +26,8 @@ namespace RuleEngineNet {
                     return Clear.Parse(X);
                 case "Say":
                     return Say.Parse(X);
+                case "ShutUp":
+                    return ShutUp.Parse(X);
                 case "Extension":
                     return Extension.Parse(X);
                 case "OneOf":
@@ -94,18 +96,14 @@ namespace RuleEngineNet {
         }
 
         private static Action ParseAtomicAction(string actionSequence) {
-            string ASSIGNEMENT_STRING_REGEX =
-                $"^(?<var>{BracketedConfigProcessor.VARNAME_REGEX_PATTERN})\\s*=\\s*\\\"(?<value>\\S+)\\\"$";
-            string ASSIGNEMENT_REGEX =
-                $"^(?<var>{BracketedConfigProcessor.VARNAME_REGEX_PATTERN})\\s*=\\s*(?<value>\\S+)$";
-            string CLEAR_REGEX =
-                $"^clear\\s+\\$(?<var>{BracketedConfigProcessor.VARNAME_REGEX_PATTERN})$";
+            string ASSIGNEMENT_STRING_REGEX = $"^(?<var>{BracketedConfigProcessor.VARNAME_REGEX_PATTERN})\\s*=\\s*\\\"(?<value>\\S+)\\\"$";
+            string ASSIGNEMENT_REGEX = $"^(?<var>{BracketedConfigProcessor.VARNAME_REGEX_PATTERN})\\s*=\\s*(?<value>\\S+)$";
+            string CLEAR_REGEX = $"^clear\\s+\\$(?<var>{BracketedConfigProcessor.VARNAME_REGEX_PATTERN})$";
             string SAY_REGEX = $"^say\\s+\".*\"$";
+            string SHUT_UP_REGEX = $"^shutUp$";
             string GPIO_REGEX = $"^GPIO\\s+(?<signal>([10],)*[10])\\s+(?<time>\\d+)$";
-            string EXTERNAL_ACTION_NAME_REGEX_PATTERN =
-                BracketedConfigProcessor.VARNAME_REGEX_PATTERN;
-            string EXTERNAL_REGEX =
-                $"^ext:(?<method>{EXTERNAL_ACTION_NAME_REGEX_PATTERN})\\s+\".*\"$";
+            string EXTERNAL_ACTION_NAME_REGEX_PATTERN = BracketedConfigProcessor.VARNAME_REGEX_PATTERN;
+            string EXTERNAL_REGEX = $"^ext:(?<method>{EXTERNAL_ACTION_NAME_REGEX_PATTERN})\\s+\".*\"$";
             Action action = null;
 
             string prettyActionSequence = actionSequence.Trim();
@@ -138,6 +136,9 @@ namespace RuleEngineNet {
                         action = new Say(possibleString);
                     }
                 }
+                else if (Regex.IsMatch(prettyActionSequence, SHUT_UP_REGEX)) {
+                    action = new ShutUp();
+                }
                 else if (Regex.IsMatch(prettyActionSequence, GPIO_REGEX)) {
                     Match m = Regex.Match(prettyActionSequence, GPIO_REGEX);
                     if (m.Length != 0) {
@@ -167,9 +168,6 @@ namespace RuleEngineNet {
         }
     }
 
-//    internal class ActionParseException : Exception
-//    {
-//    }
 
     public class Assign : Action {
         public string Var { get; set; }
@@ -265,6 +263,19 @@ namespace RuleEngineNet {
             return new Say(X.Attribute("Text").Value);
         }
     }
+
+
+    public class ShutUp : Action {
+        public static ISpeaker Speaker { get; set; }
+        public override void Execute(State S) {
+            Speaker.ShutUp();
+        }
+
+        public static ShutUp Parse(XElement X) {
+            return new ShutUp();
+        }
+    }
+
 
     public class Extension : Action {
         public static Action<string, string> Executor { get; set; }

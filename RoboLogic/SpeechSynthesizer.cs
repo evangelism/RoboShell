@@ -11,6 +11,7 @@ namespace RoboLogic
     public interface ISpeaker
     {
         void Speak(string s);
+        void ShutUp();
     }
 
     public class UWPLocalSpeaker : ISpeaker
@@ -33,6 +34,10 @@ namespace RoboLogic
             Media.AutoPlay = true;
             Media.SetSource(x, x.ContentType);
             Media.Play();
+        }
+
+        public void ShutUp() {
+            Media.Stop();
         }
     }
 }
