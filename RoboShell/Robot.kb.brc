@@ -1,2 +1,2 @@
-﻿($Event=="Key_1") => (play "say_hello.wav")
-($Event=="Key_2") => (say "pipa pipa")
+﻿($Event=="Key_1") => (say "say_hello.wav")
+($Event=="Key_2") => (shutUp)
