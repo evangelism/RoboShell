@@ -40,6 +40,7 @@ namespace RuleEngineNet
         {
             Say.Speaker = spk;
             Play.Speaker = spk;
+            ShutUp.Speaker = spk;
         }
 
         public void SetExecutor(Action<string,string> Executor)

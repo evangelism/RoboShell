@@ -12,6 +12,7 @@ namespace RoboLogic
     public interface ISpeaker
     {
         void Speak(string s);
+        void ShutUp();
         void Play(Uri filename);
     }
 
@@ -35,6 +36,10 @@ namespace RoboLogic
             Media.AutoPlay = true; // that's the default value
             Media.SetSource(x, x.ContentType);
             Media.Play();
+        }
+
+        public void ShutUp() {
+            Media.Stop();
         }
 
         public void Play(Uri audioUri)
