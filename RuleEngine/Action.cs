@@ -105,10 +105,8 @@ namespace RuleEngineNet {
             string SHUT_UP_REGEX = $"^shutUp$";
             string GPIO_REGEX = $"^GPIO\\s+(?<signal>([10],)*[10])\\s+(?<time>\\d+)$";
             string EXTERNAL_ACTION_NAME_REGEX_PATTERN = BracketedConfigProcessor.VARNAME_REGEX_PATTERN;
-            string EXTERNAL_REGEX =
-                $"^ext:(?<method>{EXTERNAL_ACTION_NAME_REGEX_PATTERN})\\s+\".*\"$";
-            string PLAY_REGEX = $"^play\\s+\".*\"$";
             string EXTERNAL_REGEX = $"^ext:(?<method>{EXTERNAL_ACTION_NAME_REGEX_PATTERN})\\s+\".*\"$";
+            string PLAY_REGEX = $"^play\\s+\".*\"$";
             Action action = null;
 
             string prettyActionSequence = actionSequence.Trim();
