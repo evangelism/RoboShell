@@ -125,9 +125,9 @@ namespace RoboShell
             DropoutTimer.Tick += FaceDropout;
             InferenceTimer.Tick += InferenceStep;
 
-            //GpioTimer.Tick += ButtonPressed;
-            //InitGpio();
-            //GpioTimer.Start();
+            GpioTimer.Tick += ButtonPressed;
+            InitGpio();
+            GpioTimer.Start();
 
             media.MediaEnded += EndSpeech;
             CoreWindow.GetForCurrentThread().KeyDown += KeyPressed;
