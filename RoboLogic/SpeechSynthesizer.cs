@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Windows.Media.SpeechSynthesis;
+using Windows.Storage.Streams;
 using Windows.UI.Xaml.Controls;
 
 namespace RoboLogic
@@ -12,6 +13,7 @@ namespace RoboLogic
     {
         void Speak(string s);
         void ShutUp();
+        void Play(Uri filename);
     }
 
     public class UWPLocalSpeaker : ISpeaker
@@ -31,13 +33,19 @@ namespace RoboLogic
         public async void Speak(string s)
         {
             var x = await Synthesizer.SynthesizeTextToStreamAsync(s);
-            Media.AutoPlay = true;
+            Media.AutoPlay = true; // that's the default value
             Media.SetSource(x, x.ContentType);
             Media.Play();
         }
 
         public void ShutUp() {
             Media.Stop();
+        }
+
+        public void Play(Uri audioUri)
+        {
+            Media.Source = audioUri;
+            Media.Play();
         }
     }
 }

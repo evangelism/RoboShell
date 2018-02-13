@@ -26,6 +26,8 @@ namespace RuleEngineNet {
                     return Clear.Parse(X);
                 case "Say":
                     return Say.Parse(X);
+                case "Play":
+                    return Play.Parse(X);
                 case "ShutUp":
                     return ShutUp.Parse(X);
                 case "Extension":
@@ -104,6 +106,7 @@ namespace RuleEngineNet {
             string GPIO_REGEX = $"^GPIO\\s+(?<signal>([10],)*[10])\\s+(?<time>\\d+)$";
             string EXTERNAL_ACTION_NAME_REGEX_PATTERN = BracketedConfigProcessor.VARNAME_REGEX_PATTERN;
             string EXTERNAL_REGEX = $"^ext:(?<method>{EXTERNAL_ACTION_NAME_REGEX_PATTERN})\\s+\".*\"$";
+            string PLAY_REGEX = $"^play\\s+\".*\"$";
             Action action = null;
 
             string prettyActionSequence = actionSequence.Trim();
@@ -139,7 +142,20 @@ namespace RuleEngineNet {
                 else if (Regex.IsMatch(prettyActionSequence, SHUT_UP_REGEX)) {
                     action = new ShutUp();
                 }
-                else if (Regex.IsMatch(prettyActionSequence, GPIO_REGEX)) {
+                else if (Regex.IsMatch(prettyActionSequence, PLAY_REGEX))
+                {
+                    int firstQuotePosition = prettyActionSequence.IndexOf("\"");
+                    int lastQuotePosition = prettyActionSequence.LastIndexOf("\"");
+                    int start = firstQuotePosition + 1;
+                    int len = lastQuotePosition - start;
+                    string possibleString = prettyActionSequence.Substring(start, len);
+                    
+                    if (BracketedConfigProcessor.AssertValidString(possibleString)) {
+                        action = new Play(possibleString);
+                    }
+                }
+                else if (Regex.IsMatch(prettyActionSequence, GPIO_REGEX))
+                {
                     Match m = Regex.Match(prettyActionSequence, GPIO_REGEX);
                     if (m.Length != 0) {
                         action = new GPIO(m.Groups["signal"].Value.Split(',', ' ')
@@ -277,8 +293,36 @@ namespace RuleEngineNet {
     }
 
 
-    public class Extension : Action {
-        public static Action<string, string> Executor { get; set; }
+    public class Play : Action
+    {
+        private const string WAV_PATH_PREFIX = "ms-appx:///Sounds/";
+        public static ISpeaker Speaker { get; set; }
+
+        public Uri FileName { get; set; }//TODO type
+
+        public Play(string filename)
+        {
+            this.FileName = new Uri(WAV_PATH_PREFIX + filename);
+        }
+
+        public override bool LongRunning => true;
+
+
+        public override void Execute(State S)
+        {
+            Speaker.Play(FileName);
+        }
+
+        public static Play Parse(XElement X) {
+            return new Play(X.Attribute("FileName").Value);
+        }
+
+    }
+    
+
+    public class Extension : Action
+    {
+        public static Action<string,string> Executor { get; set; }
 
         public string Command { get; set; }
         public string Param { get; set; }
