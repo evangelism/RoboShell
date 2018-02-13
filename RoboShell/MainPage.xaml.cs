@@ -46,7 +46,7 @@ namespace RoboShell
         DispatcherTimer DropoutTimer = new DispatcherTimer() { Interval = TimeSpan.FromSeconds(3) };
         DispatcherTimer InferenceTimer = new DispatcherTimer() { Interval = TimeSpan.FromSeconds(1) };
         DispatcherTimer GpioTimer = new DispatcherTimer() { Interval = TimeSpan.FromMilliseconds(500) };
-        DispatcherTimer ArduinoInputTimer = new DispatcherTimer() { Interval = TimeSpan.FromMilliseconds(5) };
+        DispatcherTimer ArduinoInputTimer = new DispatcherTimer() { Interval = TimeSpan.FromMilliseconds(100) };
 
         EmotionServiceClient EmoAPI = new EmotionServiceClient(Config.EmotionAPIKey,Config.EmotionAPIEndpoint);
         FaceServiceClient FaceAPI = new FaceServiceClient(Config.FaceAPIKey,Config.FaceAPIEndpoint);
@@ -141,7 +141,7 @@ namespace RoboShell
             ArduinoInputTimer.Tick += ArduinoInput;
             InitGpio();
             GpioTimer.Start();
-
+            ArduinoInputTimer.Start();
             media.MediaEnded += EndSpeech;
             CoreWindow.GetForCurrentThread().KeyDown += KeyPressed;
             await Init();
@@ -196,7 +196,7 @@ namespace RoboShell
             string input = "";
             for (int i = 0; i < ARD_PINS_COUNT; ++i)
             {
-                if (ArduinoPins[i].Read() == GpioPinValue.Low)
+                if (ArduinoPins[i].Read() == GpioPinValue.High)
                 {
                     input += "1";
                 } else
