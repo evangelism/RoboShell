@@ -13,10 +13,16 @@ using System.Collections.Generic;
 using System.Drawing;
 using Microsoft.Azure.Documents.Client;
 using Microsoft.Azure.Documents;
+using Microsoft.WindowsAzure.Storage;
+using Microsoft.WindowsAzure.Storage.Auth;
+using Microsoft.WindowsAzure.Storage.Blob;
+using Microsoft.WindowsAzure.Storage.Table;
 
 
 namespace RoboShellCognitiveLogic {
     public static class PhotosAnalyzer {
+        public const string PARTITION_KEY = "a";
+
 
         [FunctionName("PhotosAnalyzer")]
         public static async Task<HttpResponseMessage> Run([HttpTrigger(AuthorizationLevel.Anonymous, "get", "post",
@@ -26,13 +32,14 @@ namespace RoboShellCognitiveLogic {
             HttpResponseMessage response;
             try {
 
-                PhotoToProcessDTO photoToProcessDTO = JsonConvert.DeserializeObject<PhotoToProcessDTO>(
-                    await req.Content.ReadAsStringAsync());
+                PhotoToProcessDTO photoToProcessDTO = JsonConvert.DeserializeObject<PhotoToProcessDTO>(await req.Content.ReadAsStringAsync());
 
                 PhotoInfoDTO photoInfo = ProcessPhotoAsync(photoToProcessDTO.PhotoAsByteArray,
                     photoToProcessDTO.RecognizeEmotions, log);
 
-                //await SaveToDatabase(photoInfo, log);
+                if (photoInfo.FoundAndProcessedFaces) {
+                    SaveToDatabase(photoToProcessDTO.PhotoAsByteArray, photoInfo, log);
+                }
 
                 var json = JsonConvert.SerializeObject(photoInfo);
                 response = new HttpResponseMessage(HttpStatusCode.OK) {
@@ -67,7 +74,7 @@ namespace RoboShellCognitiveLogic {
             tasks[0] = Task.Run(async () => {
                 if (recognizeEmotions) {
                     try {
-                        emotion = await RecognizeEmotionsAsync(client, photoAsByteArray);
+                        emotion = (await RecognizeEmotionsAsync(client, photoAsByteArray)).Item1;
                     }
                     catch (Exception e) {
                         log.Error("Error when using emotions api! Exception message: " + e.Message);
@@ -95,7 +102,9 @@ namespace RoboShellCognitiveLogic {
             return photoInfo;
         }
 
-        public static async Task<Tuple<string, List<Dictionary<string, double>>>> RecognizeEmotionsAsync(HttpClient client, byte[] photoAsByteArray) {
+        public static async Task<Tuple<string, List<Dictionary<string, double>>>> RecognizeEmotionsAsync(
+            HttpClient client, byte[] photoAsByteArray) 
+        {
             string emotionsAPIResponse = await PhotoAPICall(client, Config.EmotionAPIEndpoint, Config.EmotionAPIKey,
                 photoAsByteArray);
 
@@ -141,8 +150,7 @@ namespace RoboShellCognitiveLogic {
             bool foundAndProcessedFaces = false;
             string faceCountAsString = "", gender = "", age = "";
 
-            string requestParameters = string.Join("&", "returnFaceId=true", "returnFaceLandmarks=false",
-                "returnFaceAttributes=age,gender");
+            string requestParameters = string.Join("&", "returnFaceId=true", "returnFaceLandmarks=false", "returnFaceAttributes=age,gender");
             string uri = Config.FaceAPIEndpoint + "?" + requestParameters;
             string faceAPIResponse = await PhotoAPICall(client, uri, Config.FaceAPIKey, photoAsByteArray);
 
@@ -153,13 +161,16 @@ namespace RoboShellCognitiveLogic {
             foreach (JToken face in faces) {
                 faceCount++;
 
-                if (face.SelectToken("faceAttributes").SelectToken("gender").ToString().Equals("male")) males++;
-                else females++;
+                if (face.SelectToken("faceAttributes").SelectToken("gender").ToString().Equals("male")) {
+                    males++;
+                }
+                else {
+                    females++;
+                }
 
                 sumage += face.SelectToken("faceAttributes").SelectToken("age").Value<double>();
 
-                Rectangle faceRectangle = new Rectangle
-                {
+                Rectangle faceRectangle = new Rectangle {
                     Width = face.SelectToken("faceRectangle").SelectToken("width").Value<int>(),
                     Height = face.SelectToken("faceRectangle").SelectToken("height").Value<int>(),
                     X = face.SelectToken("faceRectangle").SelectToken("left").Value<int>(),
@@ -206,26 +217,65 @@ namespace RoboShellCognitiveLogic {
             return responseContent;
         }
 
-        private static async Task SaveToDatabase(PhotoInfoDTO photoInfoDTO, TraceWriter log) {
-            try {
-                DocumentClient client = new DocumentClient(new Uri(Config.CosmosDBEndpoint), Config.CosmosDBKey);
+        private static async Task SaveToDatabase(byte[] photoAsByteArray, PhotoInfoDTO photoInfoDTO, TraceWriter log) {
+            string new_elem_guid = Guid.NewGuid().ToString();
+            SingleFaceFaceAPIInfoDTO singleFaceFaceApiInfo = new SingleFaceFaceAPIInfoDTO {
+                FaceRectangle = new Rectangle(0, 0, 0, 0),
+                Age = double.Parse(photoInfoDTO.Age),
+                Emotion = photoInfoDTO.Emotion,
+                Gender = photoInfoDTO.Gender
+            };
+            SavePhotoInfoToDatabase(new_elem_guid, singleFaceFaceApiInfo, log);
+        }
 
-                await client.CreateDocumentAsync(UriFactory.CreateDocumentCollectionUri(Config.CosmosDBDatabaseName,
-                    Config.CosmosDBCollectionName), photoInfoDTO);
-            }
-            catch (DocumentClientException e) {
-                if (e.StatusCode == HttpStatusCode.Conflict) {
-                    string photoInfoDTOJson = JsonConvert.SerializeObject(photoInfoDTO);
-                    log.Error($"Error while saving to db! Document with the same id already exists! " +
-                        $"Did not save to db document: '{photoInfoDTOJson}'");
-                }
-                else {
-                    log.Error($"Error while saving to db! Exception message: {e.Message}");
-                }
-            }
-            catch (Exception e) {
-                log.Error($"Error while saving to db! Exception message: {e.Message}");
-            }
+        private static void SavePhotoInfoToDatabase(string key, SingleFaceFaceAPIInfoDTO photoInfo, TraceWriter log) {
+            string myAccountName = "roboshellstore"; //TODO
+            string myAccountKey = "lGlfZMuRzmAnsecHA/st9Xrp/DGj+vtW9cvmeidAxfRz3kcSPuQAe9S63GPK/TmYhQBZnr3AotWEW1EIUbFXOg=="; //TODO
+            StorageCredentials storageCredentials = new StorageCredentials(myAccountName, myAccountKey);
+            CloudStorageAccount cloudStorageAccount = new CloudStorageAccount(storageCredentials, useHttps: true);
+            CloudTableClient tableClient = cloudStorageAccount.CreateCloudTableClient();
+            CloudTable table = tableClient.GetTableReference("photosInfo");
+
+            PhotoInfoTableEntity photoInfoEntity = new PhotoInfoTableEntity(key, photoInfo);
+
+            // Create the TableOperation object that inserts the customer entity.
+            TableOperation insertOperation = TableOperation.Insert(photoInfoEntity);
+
+            // Execute the insert operation.
+            table.Execute(insertOperation);
+
+
+
+            log.Info("SAVING PHOTO INFO TO DB");
+        }
+
+        private static void SavePhotoToDatabase(string key, byte[] photoAsByteArray, TraceWriter log) {
+            string myAccountName = "roboshellstore"; //TODO
+            string myAccountKey = "lGlfZMuRzmAnsecHA/st9Xrp/DGj+vtW9cvmeidAxfRz3kcSPuQAe9S63GPK/TmYhQBZnr3AotWEW1EIUbFXOg=="; //TODO
+            StorageCredentials storageCredentials = new StorageCredentials(myAccountName, myAccountKey);
+            CloudStorageAccount cloudStorageAccount = new CloudStorageAccount(storageCredentials, useHttps: true);
+
+            CloudBlobClient blobClient = cloudStorageAccount.CreateCloudBlobClient();
+
+            CloudBlobContainer container = blobClient.GetContainerReference("photos");
+
+            CloudBlockBlob blob = container.GetBlockBlobReference(key + ".jpg");
+            blob.UploadFromByteArrayAsync(photoAsByteArray, 0, photoAsByteArray.Length);
+
+            log.Info("SAVING PHOTO TO DB");
+        }
+    }
+
+    class PhotoInfoTableEntity : TableEntity {
+        public double Age { get; set; }
+        public string Gender { get; set; }
+        public string Emotion { get; set; }
+        public PhotoInfoTableEntity(string key, SingleFaceFaceAPIInfoDTO photoInfo) {
+            this.PartitionKey = PhotosAnalyzer.PARTITION_KEY;//TODO
+            this.RowKey = key;
+            this.Age = photoInfo.Age;
+            this.Gender = photoInfo.Gender;
+            this.Emotion = photoInfo.Emotion;
         }
     }
 
