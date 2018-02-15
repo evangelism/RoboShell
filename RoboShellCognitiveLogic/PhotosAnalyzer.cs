@@ -107,6 +107,7 @@ namespace RoboShellCognitiveLogic {
             return photoInfo;
         }
 
+
         public static void CropAndSaveToDb(List<SingleFaceFaceAPIInfoDTO> facesInfo, byte[] originalPhoto, TraceWriter log) {
             foreach (var faceInfo in facesInfo) {
                 byte[] croppedFace = cropToFace(originalPhoto, faceInfo.FaceRectangle);
@@ -117,8 +118,6 @@ namespace RoboShellCognitiveLogic {
         }
 
         
-
-
         public static byte[] cropToFace(byte[] sourceArray, Rectangle section) {
             // An empty bitmap which will hold the cropped image
 

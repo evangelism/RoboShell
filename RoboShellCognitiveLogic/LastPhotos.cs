@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -10,25 +11,27 @@ using Microsoft.WindowsAzure.Storage.Auth;
 using Microsoft.WindowsAzure.Storage.Blob;
 using Microsoft.WindowsAzure.Storage.Table;
 using System.Collections.Generic;
+using System.Text;
+using Newtonsoft.Json;
+// ReSharper disable SpecifyACultureInStringConversionExplicitly
+// ReSharper disable StringCompareIsCultureSpecific.3
 
 namespace RoboShellCognitiveLogic
 {
     public static class LastPhotos
     {
         [FunctionName("LastPhotos")]
-        public static async Task<HttpResponseMessage> Run([HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)]HttpRequestMessage req, TraceWriter log)
+        public static async Task<HttpResponseMessage> Run([HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)]
+            HttpRequestMessage req, TraceWriter log)
         {
             log.Info("C# HTTP trigger function processed a request.");
 
-            // parse query parameter
             string numberAsString = req.GetQueryNameValuePairs()
                 .FirstOrDefault(q => string.Compare(q.Key, "number", true) == 0)
                 .Value;
 
             if (numberAsString != null) {
                 int number = int.Parse(numberAsString);
-
-
 
                 string myAccountName = "roboshellstore"; //TODO
                 string myAccountKey = "lGlfZMuRzmAnsecHA/st9Xrp/DGj+vtW9cvmeidAxfRz3kcSPuQAe9S63GPK/TmYhQBZnr3AotWEW1EIUbFXOg=="; //TODO
@@ -37,28 +40,30 @@ namespace RoboShellCognitiveLogic
                 CloudTableClient tableClient = cloudStorageAccount.CreateCloudTableClient();
                 CloudTable table = tableClient.GetTableReference("croppedPhotosMeta");
 
-                try {
+                List<PhotoMetaInfoDTO> li = new List<PhotoMetaInfoDTO>();
 
+                try {
                     var query = new TableQuery<PhotoInfoTableEntity>().Take(number);
-                    //IEnumerable<PhotoInfoTableEntity> query = (from info in table.CreateQuery<PhotoInfoTableEntity>().Take(number)
 
                     var res = table.ExecuteQuery(query);
                     foreach (PhotoInfoTableEntity q in res) {
-                        log.Info("=============================");
-                        log.Info("Age: " + q.Age);
-                        log.Info("Gender: " + q.Gender);
-
                         byte[] picture = GetPictureFromBlob(q.RowKey, "cropped-photos");
-                        log.Info("Photo as bytearray length: " + picture.Length);
-
-
-                        log.Info("=============================");
+                        li.Add(new PhotoMetaInfoDTO {
+                            Age = q.Age.ToString(),
+                            Gender = q.Gender,
+                            Photo = Convert.ToBase64String(picture)
+                        });
                     }
                 }
-                catch { }
+                catch {
+                    return req.CreateResponse(HttpStatusCode.BadRequest, "Something went wrong");
+                }
 
-
-                return req.CreateResponse(HttpStatusCode.OK, "you want " + number.ToString());
+                var json = JsonConvert.SerializeObject(li);
+                var response = new HttpResponseMessage(HttpStatusCode.OK) {
+                    Content = new StringContent(json, Encoding.UTF8, "application/json")
+                };
+                return response;
             }
             else {
                 return req.CreateResponse(HttpStatusCode.BadRequest, "Please pass number on the query string");
@@ -76,53 +81,20 @@ namespace RoboShellCognitiveLogic
             CloudBlobContainer container = blobClient.GetContainerReference(containerName);
 
             CloudBlockBlob blob = container.GetBlockBlobReference(key + ".jpg");
-
+            blob.FetchAttributes();
             byte[] res = new byte[blob.Properties.Length];
             for (int i = 0; i < res.Length; i++) {
-                res[i] = 0x20; //what for?
+                res[i] = 0x20; //TODO: what for?
             }
             blob.DownloadToByteArray(res, 0);
 
             return res;
         }
+    }
 
-
-        private static void SavePhotoInfoToDatabase(string key, SingleFaceFaceAPIInfoDTO photoInfo, TraceWriter log) {
-            string myAccountName = "roboshellstore"; //TODO
-            string myAccountKey = "lGlfZMuRzmAnsecHA/st9Xrp/DGj+vtW9cvmeidAxfRz3kcSPuQAe9S63GPK/TmYhQBZnr3AotWEW1EIUbFXOg=="; //TODO
-            StorageCredentials storageCredentials = new StorageCredentials(myAccountName, myAccountKey);
-            CloudStorageAccount cloudStorageAccount = new CloudStorageAccount(storageCredentials, useHttps: true);
-            CloudTableClient tableClient = cloudStorageAccount.CreateCloudTableClient();
-            CloudTable table = tableClient.GetTableReference("photosInfo");
-
-            PhotoInfoTableEntity photoInfoEntity = new PhotoInfoTableEntity(key, photoInfo);
-
-            // Create the TableOperation object that inserts the customer entity.
-            TableOperation insertOperation = TableOperation.Insert(photoInfoEntity);
-
-            // Execute the insert operation.
-            table.Execute(insertOperation);
-
-
-
-            log.Info("SAVING PHOTO INFO TO DB");
-        }
-
-        private static void SavePhotoToDatabase(string key, byte[] photoAsByteArray, TraceWriter log) {
-            string myAccountName = "roboshellstore"; //TODO
-            string myAccountKey = "lGlfZMuRzmAnsecHA/st9Xrp/DGj+vtW9cvmeidAxfRz3kcSPuQAe9S63GPK/TmYhQBZnr3AotWEW1EIUbFXOg=="; //TODO
-            StorageCredentials storageCredentials = new StorageCredentials(myAccountName, myAccountKey);
-            CloudStorageAccount cloudStorageAccount = new CloudStorageAccount(storageCredentials, useHttps: true);
-
-            CloudBlobClient blobClient = cloudStorageAccount.CreateCloudBlobClient();
-
-            CloudBlobContainer container = blobClient.GetContainerReference("photos");
-
-            CloudBlockBlob blob = container.GetBlockBlobReference(key + ".jpg");
-            blob.UploadFromByteArrayAsync(photoAsByteArray, 0, photoAsByteArray.Length);
-
-            log.Info("SAVING PHOTO TO DB");
-        }
-
+    public class PhotoMetaInfoDTO {
+        public string Gender { get; set; }
+        public string Age { get; set; }
+        public string Photo { get; set; }
     }
 }
