@@ -49,8 +49,8 @@ namespace RoboShell
         DispatcherTimer InferenceTimer = new DispatcherTimer() { Interval = TimeSpan.FromSeconds(1) };
         
 
-        EmotionServiceClient EmoAPI = new EmotionServiceClient(Config.EmotionAPIKey,Config.EmotionAPIEndpoint);
-        FaceServiceClient FaceAPI = new FaceServiceClient(Config.FaceAPIKey,Config.FaceAPIEndpoint);
+        //EmotionServiceClient EmoAPI = new EmotionServiceClient(Config.EmotionAPIKey,Config.EmotionAPIEndpoint);
+        //FaceServiceClient FaceAPI = new FaceServiceClient(Config.FaceAPIKey,Config.FaceAPIEndpoint);
 
         private static HttpClient httpClient = new HttpClient();
 
@@ -387,6 +387,12 @@ namespace RoboShell
             }
         }
 
+        private void MainPage_Unloaded(object sender, object args) {
+            yellowButton.Dispose();
+            greenButton.Dispose();
+            redButton.Dispose();
+        }
+
         async Task<PhotoInfoDTO> ProcessPhotoAsync(byte[] photoAsByteArray, bool recognizeEmotions) {
             PhotoToProcessDTO photoToProcessDTO = new PhotoToProcessDTO {
                 PhotoAsByteArray = photoAsByteArray,
@@ -432,14 +438,6 @@ namespace RoboShell
         public string Age { get; set; }
         public string Emotion { get; set; }
         public bool FoundAndProcessedFaces { get; set; }
-        }
-
-        private void MainPage_Unloaded(object sender, object args)
-        {
-            yellowButton.Dispose();
-            greenButton.Dispose();
-            redButton.Dispose();
-        }
     }
 }
 
