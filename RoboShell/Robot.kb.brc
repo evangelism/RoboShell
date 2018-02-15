@@ -26,7 +26,7 @@ State = "Stage1"
 (($Event == "Ping") => ((say "я бы чихнула, чтобы привлечь внимание, да чихалки нет ещё") and (clear $Event))))
 
 ((rule_set = "boredom")
-(($Event == "Ping") => ((say "playing sneeze.wav") and (clear $Event))))
+(($Event == "Ping") => ((play "sneeze.wav") and (clear $Event))))
 
 
 

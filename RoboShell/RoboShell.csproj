@@ -92,6 +92,7 @@
     <Content Include="Sounds\say_hello.wav">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Include="Sounds\sneeze.wav" />
     <None Include="project.json" />
     <Content Include="Robot.kb.brc">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
