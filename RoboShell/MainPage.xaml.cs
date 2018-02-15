@@ -132,10 +132,10 @@ namespace RoboShell
             base.OnNavigatedTo(e);
             var spk = new UWPLocalSpeaker(media,Windows.Media.SpeechSynthesis.VoiceGender.Female);
             Trace("Loading knowlegdebase");
-            var xdoc = XDocument.Load("Robot.kb.xml");
-            RE = XMLRuleEngine.LoadXml(xdoc);
-            //var filename = "Robot.kb.brc";
-           // RE = BracketedRuleEngine.LoadBracketedKb(filename);
+            //var xdoc = XDocument.Load("Robot.kb.xml");
+            //RE = XMLRuleEngine.LoadXml(xdoc);
+            var filename = "Robot.kb.brc";
+            RE = BracketedRuleEngine.LoadBracketedKb(filename);
             RE.SetSpeaker(spk);
             RE.SetExecutor(ExExecutor);
             FaceWaitTimer.Tick += StartDialog;
