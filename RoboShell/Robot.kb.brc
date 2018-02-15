@@ -142,7 +142,7 @@ State = "Stage1"
 )
 
 
-(($State == "tell_about_yourself") and ($Event == "Key_6")) =>  ((say "Жаль. Тогда спою") and (GPIO 1,0,1,1,0,1 3000))
+(($State == "tell_about_yourself") and ($Event == "Key_6")) =>  ((say "Жаль. Тогда спою") and (GPIO 1,0,1,1 3000))
 
 
 (($State == "tell_about_yourself") and ($Event == "Key_7")) => (

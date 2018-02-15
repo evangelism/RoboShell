@@ -61,19 +61,19 @@ namespace RoboShell
 
         LEDManager LEDMgr;
 
-        private const int GB_PIN = 5; //good-green
-        private const int RB_PIN = 6; //bad-red
-        private const int YB_PIN = 26;//neutral-yellow
+        //private const int GB_PIN = 5; //good-green
+        //private const int RB_PIN = 6; //bad-red
+        //private const int YB_PIN = 26;//neutral-yellow
         private const int ARD_PINS_COUNT = 4; // count of pins to input from arduino
 
-        private GpioPin greenButton;
-        private GpioPin redButton;
-        private GpioPin yellowButton;
+        //private GpioPin greenButton;
+        //private GpioPin redButton;
+        //private GpioPin yellowButton;
         private GpioPin[] ArduinoPins;
         private readonly int[] ArduinoPinsNumbers = {12, 16, 20, 21}; //must change
-        private GpioPinValue greenButtonValue;
-        private GpioPinValue redButtonValue;
-        private GpioPinValue yellowButtonValue;
+        //private GpioPinValue greenButtonValue;
+        //private GpioPinValue redButtonValue;
+        //private GpioPinValue yellowButtonValue;
         
         
 
@@ -86,9 +86,9 @@ namespace RoboShell
             {
                 return;
             }
-            greenButton = gpio.OpenPin(GB_PIN);
-            redButton = gpio.OpenPin(RB_PIN);
-            yellowButton = gpio.OpenPin(YB_PIN);
+            //greenButton = gpio.OpenPin(GB_PIN);
+            //redButton = gpio.OpenPin(RB_PIN);
+            //yellowButton = gpio.OpenPin(YB_PIN);
 
             for(int i = 0; i < ARD_PINS_COUNT; i++)
             {
@@ -96,9 +96,9 @@ namespace RoboShell
                 ArduinoPins[i].SetDriveMode(GpioPinDriveMode.Input);
             }
 
-            greenButton.SetDriveMode(GpioPinDriveMode.Input);
-            redButton.SetDriveMode(GpioPinDriveMode.Input);
-            yellowButton.SetDriveMode(GpioPinDriveMode.Input);
+            //greenButton.SetDriveMode(GpioPinDriveMode.Input);
+            //redButton.SetDriveMode(GpioPinDriveMode.Input);
+            //yellowButton.SetDriveMode(GpioPinDriveMode.Input);
             Trace($"Gpio initialized correctly.");
 
         }
@@ -141,10 +141,10 @@ namespace RoboShell
             FaceWaitTimer.Tick += StartDialog;
             DropoutTimer.Tick += FaceDropout;
             InferenceTimer.Tick += InferenceStep;
-            GpioTimer.Tick += ButtonPressed;
+            //GpioTimer.Tick += ButtonPressed;
             ArduinoInputTimer.Tick += ArduinoInput;
             InitGpio();
-            GpioTimer.Start();
+            //GpioTimer.Start();
             ArduinoInputTimer.Start();
             media.MediaEnded += EndSpeech;
             CoreWindow.GetForCurrentThread().KeyDown += KeyPressed;
@@ -208,37 +208,39 @@ namespace RoboShell
                     input += "0";
                 }
             }
-            Trace($"Arduino input: {input}");
-            RE.SetVar("ArduinoInput", input);
+            if (input != "0000") {
+                Trace($"Arduino input: {input}");
+                RE.SetVar("ArduinoInput", input);
+            }
         }
 
-        private void ButtonPressed(object sender, object e)
-        {
-            yellowButtonValue = yellowButton.Read();
-            greenButtonValue = greenButton.Read();
-            redButtonValue = redButton.Read();
-            //if (redButtonValue == GpioPinValue.Low)
-            //{
-            //    var st = "Red_button";
-            //    Trace($"Initiating event {st}");
-            //    RE.SetVar("Event", st);
-            //    RE.Step();
-            //}
-            //else if (yellowButtonValue == GpioPinValue.Low)
-            //{
-            //    var st = "Yellow_button";
-            //    Trace($"Initiating event {st}");
-            //    RE.SetVar("Event", st);
-            //    RE.Step();
-            //}
-            ///*else*/ if (greenButtonValue == GpioPinValue.Low)
-            //{
-            //    var st = "Green_button";
-            //    Trace($"Initiating event {st}");
-            //    RE.SetVar("Event", st);
-            //    RE.Step();
-            //}
-        }
+        //private void ButtonPressed(object sender, object e)
+        //{
+        //    yellowButtonValue = yellowButton.Read();
+        //    greenButtonValue = greenButton.Read();
+        //    redButtonValue = redButton.Read();
+        //    //if (redButtonValue == GpioPinValue.Low)
+        //    //{
+        //    //    var st = "Red_button";
+        //    //    Trace($"Initiating event {st}");
+        //    //    RE.SetVar("Event", st);
+        //    //    RE.Step();
+        //    //}
+        //    //else if (yellowButtonValue == GpioPinValue.Low)
+        //    //{
+        //    //    var st = "Yellow_button";
+        //    //    Trace($"Initiating event {st}");
+        //    //    RE.SetVar("Event", st);
+        //    //    RE.Step();
+        //    //}
+        //    /*else*/
+        //    if (greenButtonValue == GpioPinValue.Low) {
+        //        var st = "Green_button";
+        //        Trace($"Initiating event {st}");
+        //        RE.SetVar("Event", st);
+        //        RE.Step();
+        //    }
+        //}
         private void KeyPressed(CoreWindow sender, KeyEventArgs args)
         {
             if (args.VirtualKey >= VirtualKey.Number0 &&
@@ -417,11 +419,6 @@ namespace RoboShell
             }
         }
 
-        private void MainPage_Unloaded(object sender, object args) {
-            yellowButton.Dispose();
-            greenButton.Dispose();
-            redButton.Dispose();
-        }
 
         async Task<PhotoInfoDTO> ProcessPhotoAsync(byte[] photoAsByteArray, bool recognizeEmotions) {
             PhotoToProcessDTO photoToProcessDTO = new PhotoToProcessDTO {

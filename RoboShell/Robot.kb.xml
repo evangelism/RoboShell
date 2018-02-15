@@ -70,7 +70,7 @@
       <Then>
         <Clear Var="Event"/>
         <Say Text="Проверка сигнала."/>
-        <GPIO Signal="1,0,1,0,1,0" Time="3000"></GPIO>
+        <GPIO Signal="1,0,1,0" Time="3000"></GPIO>
       </Then>
     </Rule>
 

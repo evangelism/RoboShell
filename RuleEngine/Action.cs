@@ -345,7 +345,7 @@ namespace RuleEngineNet {
     public class GPIO : Action {
         public List<int> Signal { get; set; }
         public int Time;
-        private List<int> pinsNums = new List<int>() {17, 27, 22, 23, 24, 25};
+        private List<int> pinsNums = new List<int>() {17, 27, 22, 23}; // was + 24 25
 
         public GPIO(IEnumerable<int> signal, int time) {
             this.Signal = new List<int>(signal);
