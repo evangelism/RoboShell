@@ -109,6 +109,7 @@
   <ItemGroup>
     <Compile Include="Action.cs" />
     <Compile Include="BracketedConfigProcessor.cs" />
+    <Compile Include="Config.cs" />
     <Compile Include="Expression.cs" />
     <Compile Include="ExtraOps.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

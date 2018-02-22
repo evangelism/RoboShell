@@ -13,5 +13,6 @@ namespace RoboShell
         public static int MinBoringSeconds = 10;
         public static int MaxBoringSeconds = 11;
         public static bool Headless = false;
+        public static int[] InputPinsNumbers = { 12, 16, 20, 21 };
     }
 }

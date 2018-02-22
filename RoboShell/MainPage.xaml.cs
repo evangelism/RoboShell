@@ -61,23 +61,21 @@ namespace RoboShell
 
         LEDManager LEDMgr;
 
-        private const int ARD_PINS_COUNT = 4; // count of pins to input from arduino
-
         private GpioPin[] ArduinoPins;
-        private readonly int[] ArduinoPinsNumbers = {12, 16, 20, 21}; //must change
+        private readonly int[] ArduinoPinsNumbers = Config.InputPinsNumbers; //must change
 
         GpioController gpio;
 
         private void InitGpio()
         {
             gpio = GpioController.GetDefault();
-            ArduinoPins = new GpioPin[ARD_PINS_COUNT];
+            ArduinoPins = new GpioPin[ArduinoPinsNumbers.Length];
             if (gpio == null)
             {
                 return;
             }
 
-            for(int i = 0; i < ARD_PINS_COUNT; i++)
+            for(int i = 0; i < ArduinoPinsNumbers.Length; i++)
             {
                 ArduinoPins[i] = gpio.OpenPin(ArduinoPinsNumbers[i]);
                 ArduinoPins[i].SetDriveMode(GpioPinDriveMode.Input);
@@ -183,7 +181,7 @@ namespace RoboShell
         private void ArduinoInput(object sender, object e)
         {
             string input = "";
-            for (int i = 0; i < ARD_PINS_COUNT; ++i)
+            for (int i = 0; i < ArduinoPinsNumbers.Length; ++i)
             {
                 if (ArduinoPins[i].Read() == GpioPinValue.High)
                 {
