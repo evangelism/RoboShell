@@ -362,21 +362,21 @@ namespace RuleEngineNet {
             //GpioPin pin;
             foreach (var num in pinsNums) {
                 var pin = gpio.OpenPin(num);
-                pin.Write(GpioPinValue.High);
                 pin.SetDriveMode(GpioPinDriveMode.Output);
+                pin.Write(GpioPinValue.Low);
                 pins.Add(pin);
             }
 
             long startTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
             for (int i = 0; i < 6; ++i) {
                 if (Signal[i] == 1)
-                    pins[i].Write(GpioPinValue.Low);
+                    pins[i].Write(GpioPinValue.High);
             }
 
             while (DateTimeOffset.Now.ToUnixTimeMilliseconds() - startTime < Time) { }
 
             foreach (var pin in pins) {
-                pin.Write(GpioPinValue.High);
+                pin.Write(GpioPinValue.Low);
                 pin.Dispose();
             }
 
