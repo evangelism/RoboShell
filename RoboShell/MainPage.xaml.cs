@@ -193,8 +193,8 @@ namespace RoboShell
             }
             if (input != "0000") {
                 Trace($"Received: {input}");
-                RE.SetVar("ArduinoInput", input);
             }
+            RE.SetVar("ArduinoInput", input);
         }
 
         private void KeyPressed(CoreWindow sender, KeyEventArgs args)
