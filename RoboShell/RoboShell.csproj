@@ -93,6 +93,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Sounds\sneeze.wav" />
+    <Content Include="GpioTest.kb.brc">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <None Include="project.json" />
     <Content Include="Robot.kb.brc">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

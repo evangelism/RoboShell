@@ -366,20 +366,22 @@ namespace RuleEngineNet {
                 pin.Write(GpioPinValue.Low);
                 pins.Add(pin);
             }
-
+            
             long startTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
-            for (int i = 0; i < 6; ++i) {
+            string debug = "";
+            for (int i = 0; i < 4; ++i) {
                 if (Signal[i] == 1)
                     pins[i].Write(GpioPinValue.High);
+                debug += pins[i].Read().ToString();
             }
-
+            System.Diagnostics.Debug.WriteLine($"Sended {debug}");
             while (DateTimeOffset.Now.ToUnixTimeMilliseconds() - startTime < Time) { }
 
             foreach (var pin in pins) {
                 pin.Write(GpioPinValue.Low);
                 pin.Dispose();
             }
-
+            
             return;
         }
 

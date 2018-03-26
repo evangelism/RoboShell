@@ -49,7 +49,7 @@ namespace RoboShell
         DispatcherTimer DropoutTimer = new DispatcherTimer() { Interval = TimeSpan.FromSeconds(3) };
         DispatcherTimer InferenceTimer = new DispatcherTimer() { Interval = TimeSpan.FromSeconds(1) };
         DispatcherTimer GpioTimer = new DispatcherTimer() { Interval = TimeSpan.FromMilliseconds(500) };
-        DispatcherTimer ArduinoInputTimer = new DispatcherTimer() { Interval = TimeSpan.FromMilliseconds(100) };
+        DispatcherTimer ArduinoInputTimer = new DispatcherTimer() { Interval = TimeSpan.FromMilliseconds(500) };
 
         //EmotionServiceClient EmoAPI = new EmotionServiceClient(Config.EmotionAPIKey,Config.EmotionAPIEndpoint);
         //FaceServiceClient FaceAPI = new FaceServiceClient(Config.FaceAPIKey,Config.FaceAPIEndpoint);
@@ -116,7 +116,7 @@ namespace RoboShell
             Trace("Loading knowlegdebase");
             //var xdoc = XDocument.Load("Robot.kb.xml");
             //RE = XMLRuleEngine.LoadXml(xdoc);
-            var filename = "Robot.kb.brc";
+            var filename = "GpioTest.kb.brc";
             RE = BracketedRuleEngine.LoadBracketedKb(filename);
             RE.SetSpeaker(spk);
             RE.SetExecutor(ExExecutor);
@@ -192,7 +192,7 @@ namespace RoboShell
                 }
             }
             if (input != "0000") {
-                Trace($"Arduino input: {input}");
+                Trace($"Received: {input}");
                 RE.SetVar("ArduinoInput", input);
             }
         }
@@ -348,7 +348,7 @@ namespace RoboShell
             if (!IsFacePresent) {
                 return false;
             }
-
+            Trace("RecognizeFace() started");
             FaceWaitTimer.Stop();
 
             var photoAsStream = new MemoryStream();
@@ -356,7 +356,9 @@ namespace RoboShell
 
             byte[] photoAsByteArray = photoAsStream.ToArray();
 
+            Trace("BEFORE ProcessPhotoAsync()");
             PhotoInfoDTO photoInfo = await ProcessPhotoAsync(photoAsByteArray, Config.RecognizeEmotions);
+            Trace("AFTER ProcessPhotoAsync()");
 
             if (photoInfo.FoundAndProcessedFaces) {
                 RE.SetVar("FaceCount", photoInfo.FaceCountAsString);
@@ -367,10 +369,12 @@ namespace RoboShell
                 }
 
                 Trace($"Face data: #faces={RE.State.Eval("FaceCount")}, age={RE.State.Eval("Age")}, gender={RE.State.Eval("Gender")}, emo={RE.State.Eval("Emotion")}");
+                Trace("RecognizeFace() finished");
                 return true;
             }
             else {
                 FaceWaitTimer.Start();
+                Trace("RecognizeFace() finished");
                 return false;
             }
         }
