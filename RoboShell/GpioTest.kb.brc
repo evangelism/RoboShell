@@ -2,22 +2,4 @@
 RobotName = "Подушка вреднюшка"
 State = "Stage1"
 
-(($Event == "FaceIn") and ($FaceCount == 1)) => (
-    (State = "Stage2") and
-	(GPIO 1,0,0,0 1000)
-)
-
-(($State == "Stage2") and ($ArduinoInput == "0000")) => (
-	(State = "Stage3") and
-	(GPIO 1,0,1,0 1000)
-)
-
-($State == "Stage2") => (
-	(State = "Stage3") and
-	(GPIO 0,0,1,0 1000)
-)
-
-(($State == "Stage3")) => (
-	(State = "Stage4") and
-	(GPIO 1,1,1,1 5000)
-)
+($Event == "Key_1") => (GPIO 50 1,0,0,0 3000)
