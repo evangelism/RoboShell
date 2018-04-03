@@ -103,7 +103,7 @@ namespace RuleEngineNet {
             string CLEAR_REGEX = $"^clear\\s+\\$(?<var>{BracketedConfigProcessor.VARNAME_REGEX_PATTERN})$";
             string SAY_REGEX = $"^say\\s+\".*\"$";
             string SHUT_UP_REGEX = $"^shutUp$";
-            string GPIO_REGEX = $"^GPIO\\s+(?<signal>([10],)*[10])\\s+(?<time>\\d+)$";
+            string GPIO_REGEX = $"^GPIO\\s+(?<probability>\\d*)\\s+(?<signal>([10],)*[10])\\s+(?<time>\\d+)$";
             string EXTERNAL_ACTION_NAME_REGEX_PATTERN = BracketedConfigProcessor.VARNAME_REGEX_PATTERN;
             string EXTERNAL_REGEX = $"^ext:(?<method>{EXTERNAL_ACTION_NAME_REGEX_PATTERN})\\s+\".*\"$";
             string PLAY_REGEX = $"^play\\s+\".*\"$";
@@ -157,9 +157,15 @@ namespace RuleEngineNet {
                 else if (Regex.IsMatch(prettyActionSequence, GPIO_REGEX))
                 {
                     Match m = Regex.Match(prettyActionSequence, GPIO_REGEX);
-                    if (m.Length != 0) {
+                    if (m.Length != 0 && m.Groups["probability"].Value.Length != 0) {
                         action = new GPIO(m.Groups["signal"].Value.Split(',', ' ')
-                            .Select(Int32.Parse).ToList(), Int32.Parse(m.Groups["time"].Value));
+                            .Select(Int32.Parse).ToList(), Int32.Parse(m.Groups["time"].Value),
+                            Int32.Parse(m.Groups["probability"].Value));
+                    }
+                    else
+                    {
+                        action = new GPIO(m.Groups["signal"].Value.Split(',', ' ')
+                                .Select(Int32.Parse).ToList(), Int32.Parse(m.Groups["time"].Value), 100);
                     }
                 }
                 else if (Regex.IsMatch(prettyActionSequence, EXTERNAL_REGEX)) {
@@ -345,14 +351,23 @@ namespace RuleEngineNet {
     public class GPIO : Action {
         public List<int> Signal { get; set; }
         public int Time;
+        public int Probability { get; set; }
         private int[] pinsNums = Config.OutputPinsNumbers;
 
-        public GPIO(IEnumerable<int> signal, int time) {
+        public GPIO(IEnumerable<int> signal, int time, int probability) {
             this.Signal = new List<int>(signal);
             this.Time = time;
+            this.Probability = probability;
         }
 
-        public override void Execute(State S) {
+        public override void Execute(State S)
+        {
+            var rand = new Random();
+            int tmp = rand.Next(1, 101);
+            if (tmp > Probability)
+            {
+                return;
+            }
             var gpio = GpioController.GetDefault();
             if (gpio == null) {
                 return;
@@ -389,7 +404,7 @@ namespace RuleEngineNet {
             try {
                 return new GPIO(
                     X.Attribute("Signal").Value.Split(',', ' ').Select(Int32.Parse).ToList(),
-                    Int32.Parse(X.Attribute("Time").Value));
+                    Int32.Parse(X.Attribute("Time").Value), 100);
             }
             catch {
                 throw new RuleEngineException("Error converting string to number");
