@@ -274,7 +274,7 @@ namespace RuleEngineNet {
             this.Text = Text;
         }
 
-        public override bool LongRunning => true;
+        public override bool LongRunning => false;
 
         public override void Execute(State S) {
             Speaker.Speak(S.EvalString(Text));

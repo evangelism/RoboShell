@@ -1,5 +1,0 @@
-﻿
-RobotName = "Подушка вреднюшка"
-State = "Stage1"
-
-($Event == "Key_1") => (GPIO 50 1,0,0,0 3000)

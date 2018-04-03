@@ -116,7 +116,7 @@ namespace RoboShell
             Trace("Loading knowlegdebase");
             //var xdoc = XDocument.Load("Robot.kb.xml");
             //RE = XMLRuleEngine.LoadXml(xdoc);
-            var filename = "GpioTest.kb.brc";
+            var filename = "StrCnctSample.brc";
             RE = BracketedRuleEngine.LoadBracketedKb(filename);
             RE.SetSpeaker(spk);
             RE.SetExecutor(ExExecutor);

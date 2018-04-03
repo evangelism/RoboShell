@@ -79,14 +79,7 @@ namespace RuleEngineNet
                 var rule = ResolveConflict(cs);
                 LastActionLongRunning = rule.Then.LongRunning;
                 rule.Then.Execute(State);
-                if (rule.RuleSet==null) rule.Active = false;
-                else
-                {
-                    var t = from x in cs
-                            where (x.RuleSet != null && x.RuleSet == rule.RuleSet)
-                            select x;
-                    foreach (var x in t) x.Active = false;
-                }
+                if (rule.RuleSet==null) rule.Active = true;
                 return true;
             }
             else return false;
@@ -198,20 +191,13 @@ namespace RuleEngineNet
                 while ((line = streamReader.ReadLine()) != null)
                 {
                     // skip if only spaces containing line
-                    try
-                    {
+                    
+                    
                         Tuple<string, string> assignement = ParseVarAssignementLine(line);
                         //Console.WriteLine($"{assignement.Item1} = {assignement.Item2}");// TODO: logger.info
                         S.Add(assignement.Item1, assignement.Item2);
-                    }
-                    catch (StateLineParseException e)
-                    {
-                        break;
-                    }
-                    catch (RuleEngineException e)
-                    {
-                        //                    Console.WriteLine(e.Message); // TODO: logger.error
-                    }
+                    
+                    
                 }
 
 
