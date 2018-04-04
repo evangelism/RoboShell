@@ -116,8 +116,7 @@ namespace RoboShell
             Trace("Loading knowlegdebase");
             //var xdoc = XDocument.Load("Robot.kb.xml");
             //RE = XMLRuleEngine.LoadXml(xdoc);
-            var filename = "StrCnctSample.brc";
-            RE = BracketedRuleEngine.LoadBracketedKb(filename);
+            RE = BracketedRuleEngine.LoadBracketedKb(Config.KBFileName);
             RE.SetSpeaker(spk);
             RE.SetExecutor(ExExecutor);
             FaceWaitTimer.Tick += StartDialog;
