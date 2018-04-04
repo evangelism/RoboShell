@@ -166,49 +166,37 @@ namespace RuleEngineNet
         }
 
 
-        private static async Task<Tuple<State, List<Rule>>> fileLineByLine(String filename) {
-            //List<string> stateConfigLines = new List<string>();
+        private static async Task<Tuple<State, List<Rule>>> fileLineByLine(String filename)
+        {
             List<string> rulesConfigLines = new List<string>();
-
             State S = new State();
             List<Rule> R = new List<Rule>();
-
             string line;
-
-            
-
             StorageFolder appInstalledFolder = Windows.ApplicationModel.Package.Current.InstalledLocation;
-            
-
-
-            var file = await appInstalledFolder.GetFileAsync(filename);//.GetFileFromApplicationUriAsync(new Uri($"ms-appx:///{filename}"));
-
+            var file = await appInstalledFolder.GetFileAsync(filename);
 
             using (var inputStream = await file.OpenReadAsync())
             using (var classicStream = inputStream.AsStreamForRead())
-            using (var streamReader = new StreamReader(classicStream)) {
-                // parse states
+            using (var streamReader = new StreamReader(classicStream))
+            {
                 while ((line = streamReader.ReadLine()) != null)
                 {
-                    // skip if only spaces containing line
-                    
-                    
+                    try
+                    {
                         Tuple<string, string> assignement = ParseVarAssignementLine(line);
-                        //Console.WriteLine($"{assignement.Item1} = {assignement.Item2}");// TODO: logger.info
                         S.Add(assignement.Item1, assignement.Item2);
-                    
-                    
+                    }
+                    catch (Exception)
+                    {
+                        break;
+                    }
                 }
-
 
                 string RulesConfigString = line;
-                // parse rules
                 while ((line = streamReader.ReadLine()) != null)
                 {
-                    // skip if only spaces containing line
                     RulesConfigString += " " + line;
                 }
-
 
                 R = ParseRulesConfigString(RulesConfigString);
             }
