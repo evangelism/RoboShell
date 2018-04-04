@@ -17,7 +17,6 @@ namespace RuleEngineNet {
     public abstract class Action {
         public abstract void Execute(State S);
         public virtual bool LongRunning { get; } = false;
-
         public static Action LoadXml(XElement X) {
             switch (X.Name.LocalName) {
                 case "Assign":
@@ -27,7 +26,7 @@ namespace RuleEngineNet {
                 case "Say":
                     return Say.Parse(X);
                 case "Play":
-                    return Play.Parse(X);
+                    return Play.Parse(X, 100);
                 case "ShutUp":
                     return ShutUp.Parse(X);
                 case "Extension":
@@ -101,15 +100,16 @@ namespace RuleEngineNet {
             string ASSIGNEMENT_STRING_REGEX = $"^(?<var>{BracketedConfigProcessor.VARNAME_REGEX_PATTERN})\\s*=\\s*\\\"(?<value>\\S+)\\\"$";
             string ASSIGNEMENT_REGEX = $"^(?<var>{BracketedConfigProcessor.VARNAME_REGEX_PATTERN})\\s*=\\s*(?<value>\\S+)$";
             string CLEAR_REGEX = $"^clear\\s+\\$(?<var>{BracketedConfigProcessor.VARNAME_REGEX_PATTERN})$";
-            string SAY_REGEX = $"^say\\s+\".*\"$";
+            string SAY_REGEX = $"^say\\s+((?<probability>\\d*)\\s+)?\".*\"$";
             string SHUT_UP_REGEX = $"^shutUp$";
-            string GPIO_REGEX = $"^GPIO\\s+(?<probability>\\d*)\\s+(?<signal>([10],)*[10])\\s+(?<time>\\d+)$";
+            string GPIO_REGEX = $"^GPIO\\s+((?<probability>\\d*)\\s+)?(?<signal>([10],)*[10])\\s+(?<time>\\d+)$";
             string EXTERNAL_ACTION_NAME_REGEX_PATTERN = BracketedConfigProcessor.VARNAME_REGEX_PATTERN;
             string EXTERNAL_REGEX = $"^ext:(?<method>{EXTERNAL_ACTION_NAME_REGEX_PATTERN})\\s+\".*\"$";
-            string PLAY_REGEX = $"^play\\s+\".*\"$";
+            string PLAY_REGEX = $"^play\\s+((?<probability>\\d*)\\s+)?\".*\"$";
             Action action = null;
 
             string prettyActionSequence = actionSequence.Trim();
+            int probability;
             try {
                 if (Regex.IsMatch(prettyActionSequence, ASSIGNEMENT_STRING_REGEX)) {
                     Match m = Regex.Match(prettyActionSequence, ASSIGNEMENT_STRING_REGEX);
@@ -135,8 +135,17 @@ namespace RuleEngineNet {
                     int start = firstQuotePosition + 1;
                     int len = lastQuotePosition - start;
                     string possibleString = prettyActionSequence.Substring(start, len);
+                    Match m = Regex.Match(prettyActionSequence, SAY_REGEX);
+                    if (m.Length != 0 && m.Groups["probability"].Value.Length != 0)
+                    {
+                        probability = Int32.Parse(m.Groups["probability"].Value);
+                    }
+                    else
+                    {
+                        probability = 100;
+                    }
                     if (BracketedConfigProcessor.AssertValidString(possibleString)) {
-                        action = new Say(possibleString);
+                        action = new Say(possibleString, probability);
                     }
                 }
                 else if (Regex.IsMatch(prettyActionSequence, SHUT_UP_REGEX)) {
@@ -149,23 +158,34 @@ namespace RuleEngineNet {
                     int start = firstQuotePosition + 1;
                     int len = lastQuotePosition - start;
                     string possibleString = prettyActionSequence.Substring(start, len);
-                    
+                    Match m = Regex.Match(prettyActionSequence, PLAY_REGEX);
+                    if (m.Length != 0 && m.Groups["probability"].Value.Length != 0)
+                    {
+                        probability = Int32.Parse(m.Groups["probability"].Value);
+                    }
+                    else
+                    {
+                        probability = 100;
+                    }
                     if (BracketedConfigProcessor.AssertValidString(possibleString)) {
-                        action = new Play(possibleString);
+                        action = new Play(possibleString, probability);
                     }
                 }
                 else if (Regex.IsMatch(prettyActionSequence, GPIO_REGEX))
                 {
                     Match m = Regex.Match(prettyActionSequence, GPIO_REGEX);
-                    if (m.Length != 0 && m.Groups["probability"].Value.Length != 0) {
-                        action = new GPIO(m.Groups["signal"].Value.Split(',', ' ')
-                            .Select(Int32.Parse).ToList(), Int32.Parse(m.Groups["time"].Value),
-                            Int32.Parse(m.Groups["probability"].Value));
+                    if (m.Length != 0 && m.Groups["probability"].Value.Length != 0)
+                    {
+                        probability = Int32.Parse(m.Groups["probability"].Value);
                     }
                     else
                     {
+                        probability = 100;
+                    }
+                    if (m.Length != 0) {
                         action = new GPIO(m.Groups["signal"].Value.Split(',', ' ')
-                                .Select(Int32.Parse).ToList(), Int32.Parse(m.Groups["time"].Value), 100);
+                            .Select(Int32.Parse).ToList(), Int32.Parse(m.Groups["time"].Value),
+                            probability);
                     }
                 }
                 else if (Regex.IsMatch(prettyActionSequence, EXTERNAL_REGEX)) {
@@ -267,22 +287,29 @@ namespace RuleEngineNet {
 
     public class Say : Action {
         public static ISpeaker Speaker { get; set; }
-
+        public int Probability { get; set; }
         public string Text { get; set; }
 
-        public Say(string Text) {
+        public Say(string Text, int Probability) {
             this.Text = Text;
+            this.Probability = Probability;
         }
 
         public override bool LongRunning => false;
 
-        public override void Execute(State S) {
+        public override void Execute(State S)
+        {
+            var rand = new Random();
+            if (rand.Next(1, 101) > Probability)
+            {
+                return;
+            }
             Speaker.Speak(S.EvalString(Text));
             System.Diagnostics.Debug.WriteLine(S.EvalString(Text));
         }
 
         public static Say Parse(XElement X) {
-            return new Say(X.Attribute("Text").Value);
+            return new Say(X.Attribute("Text").Value, 100);
         }
     }
 
@@ -303,12 +330,12 @@ namespace RuleEngineNet {
     {
         private const string WAV_PATH_PREFIX = "ms-appx:///Sounds/";
         public static ISpeaker Speaker { get; set; }
-
+        public int Probability { get; set; }
         public Uri FileName { get; set; }//TODO type
-
-        public Play(string filename)
+        public Play(string filename, int prob)
         {
             this.FileName = new Uri(WAV_PATH_PREFIX + filename);
+            Probability = prob;
         }
 
         public override bool LongRunning => true;
@@ -316,11 +343,16 @@ namespace RuleEngineNet {
 
         public override void Execute(State S)
         {
+            var rand = new Random();
+            if (rand.Next(1, 101) > Probability)
+            {
+                return;
+            }
             Speaker.Play(FileName);
         }
 
-        public static Play Parse(XElement X) {
-            return new Play(X.Attribute("FileName").Value);
+        public static Play Parse(XElement X, int _prob) {
+            return new Play(X.Attribute("FileName").Value, _prob);
         }
 
     }
