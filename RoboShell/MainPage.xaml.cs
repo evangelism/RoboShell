@@ -116,7 +116,7 @@ namespace RoboShell
             Trace("Loading knowlegdebase");
             //var xdoc = XDocument.Load("Robot.kb.xml");
             //RE = XMLRuleEngine.LoadXml(xdoc);
-            var filename = "StrCnctSample.brc";
+            var filename = "quiz.brc";
             RE = BracketedRuleEngine.LoadBracketedKb(filename);
             RE.SetSpeaker(spk);
             RE.SetExecutor(ExExecutor);
@@ -174,6 +174,10 @@ namespace RoboShell
                 case "LED":
                     var t1 = Param.Split(':');
                     LEDMgr.LEDS[t1[0]].Load(new LEDImage(t1[1]));
+                    break;
+                case "Wait":
+                    Task wait = Task.Run(async () => await Task.Delay(TimeSpan.FromMilliseconds(Param.AsFloat())));
+                    Task.WaitAll(wait);
                     break;
             }
         }
