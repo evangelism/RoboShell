@@ -2,15 +2,7 @@
 RobotName = "Подушка вреднюшка"
 State = "ПРИВЕТ"
 
-($Event == "Key_1") => (State = "аб")
-
-(($Event == "Key_2") or ($Event == "Key_0")) => ((State_Tmp = "${State}") and (AB = "True"))
-($AB == "True") => ((State = "${State_Tmp}вгде") and (clear $AB))
-
-
-
-
-
+($Event == "Key_1") => ((clear $Event) and (GPIO 100 1,0,1,1 10000))
 
 ($Event == "Key_3") => (say "abc")
 

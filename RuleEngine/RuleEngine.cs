@@ -79,7 +79,7 @@ namespace RuleEngineNet
                 var rule = ResolveConflict(cs);
                 LastActionLongRunning = rule.Then.LongRunning;
                 rule.Then.Execute(State);
-                if (rule.RuleSet==null) rule.Active = true;
+                if (rule.RuleSet==null) rule.Active = false;
                 return true;
             }
             else return false;
