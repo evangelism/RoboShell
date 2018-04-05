@@ -1,28 +1,28 @@
 
 (($Cnct == "True") and ($ArduinoInput == "1000")) => (
-    ($Answers = "{Tmp}1") and (clear $Cnct)
+    ($Answers = "${Tmp}1") and (clear $Cnct)
 )
 
 (($Cnct == "True") and ($ArduinoInput == "0100")) => (
-    ($Answers = "{Tmp}0") and (clear $Cnct)
+    ($Answers = "${Tmp}0") and (clear $Cnct)
 )
 
 ($State == "Question_1") =>
 (
-    (say "Вопрос первый") and ($Tmp = "") and ($Cnct = "True")
-    and ($State = "Question_2")
+    (say "Вопрос первый") and (Tmp = "") and (Cnct = "True")
+    and (State = "Question_2")
 )
 
 ($State == "Question_2") =>
 (
-    (say "Вопрос второй") and ($Tmp = "${Answers}") and ($Cnct = "True")
-    and ($State = "Question_3")
+    (say "Вопрос второй") and (Tmp = "${Answers}") and (Cnct = "True")
+    and (State = "Question_3")
 )
 
 ($State == "Question_3") =>
 (
-    (say "Вопрос второй") and ($Tmp = "${Answers}") and ($Cnct = "True")
-    and ($State = "Result")
+    (say "Вопрос второй") and (Tmp = "${Answers}") and (Cnct = "True")
+    and (State = "Result")
 )
 
 ($State == "Result") =>
