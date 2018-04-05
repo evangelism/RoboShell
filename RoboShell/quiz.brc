@@ -1,10 +1,10 @@
 
 (($Cnct == "True") and ($ArduinoInput == "1000")) => (
-    ($Answers = "${Tmp}1") and (clear $Cnct)
+    (Answers = "${Tmp}1") and (clear $Cnct)
 )
 
 (($Cnct == "True") and ($ArduinoInput == "0100")) => (
-    ($Answers = "${Tmp}0") and (clear $Cnct)
+    (Answers = "${Tmp}0") and (clear $Cnct)
 )
 
 ($State == "Question_1") =>
