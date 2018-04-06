@@ -7,11 +7,6 @@ State = "ПРИВЕТ"
 (($Event == "Key_2") or ($Event == "Key_0")) => ((State_Tmp = "${State}") and (AB = "True"))
 ($AB == "True") => ((State = "${State_Tmp}вгде") and (clear $AB))
 
-
-
-
-
-
 ($Event == "Key_3") => (say "abc")
 
 ($Event == "Key_4") => (say "${State_Tmp}")
