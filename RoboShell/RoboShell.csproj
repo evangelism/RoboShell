@@ -120,6 +120,9 @@
     <AppxManifest Include="Package.appxmanifest">
       <SubType>Designer</SubType>
     </AppxManifest>
+    <Content Include="quiz.brc">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <None Include="RoboShell_TemporaryKey.pfx" />
   </ItemGroup>
   <ItemGroup>

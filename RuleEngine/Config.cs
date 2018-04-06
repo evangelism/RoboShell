@@ -8,6 +8,6 @@ namespace RuleEngineNet
 {
     public static class Config
     {
-        public static int[] OutputPinsNumbers = { 17, 27, 22, 23 };
+        public static int[] OutputPinsNumbers = { 12, 16, 20, 21 };
     }
 }

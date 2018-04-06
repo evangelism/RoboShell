@@ -295,7 +295,7 @@ namespace RuleEngineNet {
             this.Probability = Probability;
         }
 
-        public override bool LongRunning => false;
+        public override bool LongRunning => true;
 
         public override void Execute(State S)
         {
@@ -313,7 +313,6 @@ namespace RuleEngineNet {
         }
     }
 
-
     public class ShutUp : Action {
         public static ISpeaker Speaker { get; set; }
         public override void Execute(State S) {
@@ -324,7 +323,6 @@ namespace RuleEngineNet {
             return new ShutUp();
         }
     }
-
 
     public class Play : Action
     {
@@ -356,7 +354,6 @@ namespace RuleEngineNet {
         }
 
     }
-    
 
     public class Extension : Action
     {
@@ -443,4 +440,5 @@ namespace RuleEngineNet {
             }
         }
     }
+
 }
