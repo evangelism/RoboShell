@@ -132,9 +132,7 @@ namespace RuleEngineNet
                 }
                 else {
                     tryingArrowPositionIndex++;
-                }
-                
-                
+                }               
             }
 
         }
