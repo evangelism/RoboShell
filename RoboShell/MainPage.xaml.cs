@@ -175,10 +175,6 @@ namespace RoboShell
                     var t1 = Param.Split(':');
                     LEDMgr.LEDS[t1[0]].Load(new LEDImage(t1[1]));
                     break;
-                case "Wait":
-                    Task wait = Task.Run(async () => await Task.Delay(TimeSpan.FromMilliseconds(Param.AsFloat())));
-                    Task.WaitAll(wait);
-                    break;
             }
         }
 
@@ -284,16 +280,16 @@ namespace RoboShell
         /// <returns></returns>
         private async Task HighlightDetectedFace(DetectedFace face)
         {
-//            double cx=0, cy=0;
-//            if (!Config.Headless)
-//            {
-//                cx = ViewFinder.ActualWidth / VideoProps.Width;
-//                cy = ViewFinder.ActualHeight / VideoProps.Height;
-//            }
+            double cx=0, cy=0;
+            if (!Config.Headless)
+            {
+                cx = ViewFinder.ActualWidth / VideoProps.Width;
+                cy = ViewFinder.ActualHeight / VideoProps.Height;
+            }
 
             if (face == null)
             {
-//                if (!Config.Headless) FaceRect.Visibility = Visibility.Collapsed;
+                if (!Config.Headless) FaceRect.Visibility = Visibility.Collapsed;
                 FaceWaitTimer.Stop();
                 if (IsFacePresent)
                 {
@@ -304,13 +300,13 @@ namespace RoboShell
             else
             {
                 DropoutTimer.Stop();
-//                if (!Config.Headless)
-//                {
-//                    FaceRect.Margin = new Thickness(cx * face.FaceBox.X, cy * face.FaceBox.Y, 0, 0);
-//                    FaceRect.Width = cx * face.FaceBox.Width;
-//                    FaceRect.Height = cy * face.FaceBox.Height;
-//                    FaceRect.Visibility = Visibility.Visible;
-//                }
+                if (!Config.Headless)
+                {
+                    FaceRect.Margin = new Thickness(cx * face.FaceBox.X, cy * face.FaceBox.Y, 0, 0);
+                    FaceRect.Width = cx * face.FaceBox.Width;
+                    FaceRect.Height = cy * face.FaceBox.Height;
+                    FaceRect.Visibility = Visibility.Visible;
+                }
                 if (!IsFacePresent)
                 {
                     IsFacePresent = true;
