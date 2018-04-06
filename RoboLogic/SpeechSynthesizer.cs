@@ -35,6 +35,7 @@ namespace RoboLogic
             var x = await Synthesizer.SynthesizeTextToStreamAsync(s);
             Media.AutoPlay = true; // that's the default value
             Media.SetSource(x, x.ContentType);
+            Media.Volume = 1.0;
             Media.Play();
         }
 

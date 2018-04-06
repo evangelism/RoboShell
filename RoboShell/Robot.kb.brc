@@ -48,7 +48,7 @@ State = "Stage1"
     (State = "Stage2") and
     (	(say "Привет, {${Gender}:M=земной|F=земная} {${Gender}${AgeCat}:MB=мальчик|MT=юноша|MA=мужчина|MO=муже|FB=девочка|FT=девушка|FA=женщина|FO=бабушка}! это я машу уголком") or
 		(say "Привет, человек! это я машу уголком")) and
-	(ext:LED "M:mouth_neutral") and (GPIO 1,0,0,0 500)
+	(ext:LED "M:mouth_neutral") and (GPIO 100 1,0,0,0 500)
     
 )
 
@@ -142,7 +142,7 @@ State = "Stage1"
 )
 
 
-(($State == "tell_about_yourself") and ($Event == "Key_6")) =>  ((say "Жаль. Тогда спою") and (GPIO 1,0,0,0 3000))
+(($State == "tell_about_yourself") and ($Event == "Key_6")) =>  ((say "Жаль. Тогда спою") and (GPIO 100 1,0,0,0 3000))
 
 
 (($State == "tell_about_yourself") and ($Event == "Key_7")) => (

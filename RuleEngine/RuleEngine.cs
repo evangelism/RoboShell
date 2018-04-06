@@ -79,14 +79,7 @@ namespace RuleEngineNet
                 var rule = ResolveConflict(cs);
                 LastActionLongRunning = rule.Then.LongRunning;
                 rule.Then.Execute(State);
-                if (rule.RuleSet==null) rule.Active = false;
-                else
-                {
-                    var t = from x in cs
-                            where (x.RuleSet != null && x.RuleSet == rule.RuleSet)
-                            select x;
-                    foreach (var x in t) x.Active = false;
-                }
+                if (rule.RuleSet==null) rule.Active = true;
                 return true;
             }
             else return false;
@@ -173,56 +166,37 @@ namespace RuleEngineNet
         }
 
 
-        private static async Task<Tuple<State, List<Rule>>> fileLineByLine(String filename) {
-            //List<string> stateConfigLines = new List<string>();
+        private static async Task<Tuple<State, List<Rule>>> fileLineByLine(String filename)
+        {
             List<string> rulesConfigLines = new List<string>();
-
             State S = new State();
             List<Rule> R = new List<Rule>();
-
             string line;
-
-            
-
             StorageFolder appInstalledFolder = Windows.ApplicationModel.Package.Current.InstalledLocation;
-            
-
-
-            var file = await appInstalledFolder.GetFileAsync(filename);//.GetFileFromApplicationUriAsync(new Uri($"ms-appx:///{filename}"));
-
+            var file = await appInstalledFolder.GetFileAsync(filename);
 
             using (var inputStream = await file.OpenReadAsync())
             using (var classicStream = inputStream.AsStreamForRead())
-            using (var streamReader = new StreamReader(classicStream)) {
-                // parse states
+            using (var streamReader = new StreamReader(classicStream))
+            {
                 while ((line = streamReader.ReadLine()) != null)
                 {
-                    // skip if only spaces containing line
                     try
                     {
                         Tuple<string, string> assignement = ParseVarAssignementLine(line);
-                        //Console.WriteLine($"{assignement.Item1} = {assignement.Item2}");// TODO: logger.info
                         S.Add(assignement.Item1, assignement.Item2);
                     }
-                    catch (StateLineParseException e)
+                    catch (Exception)
                     {
                         break;
                     }
-                    catch (RuleEngineException e)
-                    {
-                        //                    Console.WriteLine(e.Message); // TODO: logger.error
-                    }
                 }
-
 
                 string RulesConfigString = line;
-                // parse rules
                 while ((line = streamReader.ReadLine()) != null)
                 {
-                    // skip if only spaces containing line
                     RulesConfigString += " " + line;
                 }
-
 
                 R = ParseRulesConfigString(RulesConfigString);
             }
