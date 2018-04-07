@@ -331,13 +331,15 @@ namespace RoboShell
         async void StartDialog(object sender, object e)
         {
             if (!IsFacePresent) return;
+            RE.SetVar("Event", "FaceIn");
+            RE.Step();
             InDialog = true;
             Trace("Calling face recognition");
             var res = await RecognizeFace();
             if (res)
             {
-                Trace("Initiating FaceIn Event");
-                RE.SetVar("Event", "FaceIn");
+                Trace("Initiating FaceRecognized Event");
+                RE.SetVar("Event", "FaceRecognized");
                 RE.Step();
                 InferenceTimer.Start();
             }

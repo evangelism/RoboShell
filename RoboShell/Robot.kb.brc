@@ -33,7 +33,7 @@ State = "Stage1"
 
 
 
-($Event == "FaceIn") => (ext:LED "M:mouth_smile")
+($Event == "FaceRecognized") => (ext:LED "M:mouth_smile")
 ($Event == "FaceOut") => (ext:LED "M:mouth_neutral")
 
 
@@ -44,7 +44,7 @@ State = "Stage1"
 
 
 
-(($Event == "FaceIn") and ($FaceCount == 1)) => (
+(($Event == "FaceRecognized") and ($FaceCount == 1)) => (
     (State = "Stage2") and
     (	(say "Привет, {${Gender}:M=земной|F=земная} {${Gender}${AgeCat}:MB=мальчик|MT=юноша|MA=мужчина|MO=муже|FB=девочка|FT=девушка|FA=женщина|FO=бабушка}! это я машу уголком") or
 		(say "Привет, человек! это я машу уголком")) and
@@ -52,7 +52,7 @@ State = "Stage1"
     
 )
 
-(($Event == "FaceIn") and ($FaceCount > 1)) => (
+(($Event == "FaceRecognized") and ($FaceCount > 1)) => (
     (State = "Stage2") and
     (say "{Привет|Мир вам}, {люди|человеки|гуманоиды}. Выберите того, кто удостоится общения со мной!")
 )
