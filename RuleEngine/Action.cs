@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 using Windows.Devices.Gpio;
@@ -383,14 +384,21 @@ namespace RuleEngineNet {
         public int Probability { get; set; }
         private int[] pinsNums = Config.OutputPinsNumbers;
 
+        CancellationTokenSource tokenSource2;
+        CancellationToken ct;
+        private Task task = Task.CompletedTask;
+
         public GPIO(IEnumerable<int> signal, int time, int probability) {
             this.Signal = new List<int>(signal);
             this.Time = time;
             this.Probability = probability;
+            tokenSource2 = new CancellationTokenSource();
+            ct =  tokenSource2.Token;
         }
 
         public override void Execute(State S)
         {
+            System.Diagnostics.Debug.WriteLine($"GPIO_TASK {task.Status}");
             var rand = new Random();
             int tmp = rand.Next(1, 101);
             if (tmp > Probability)
@@ -401,6 +409,13 @@ namespace RuleEngineNet {
             if (gpio == null) {
                 return;
             }
+
+            Task.WaitAll(task);
+            if (task.Status == TaskStatus.Running) {
+                System.Diagnostics.Debug.WriteLine("GPIO_TASK is running, will wait");
+                Task.WaitAll(task);
+            }
+
 
             List<GpioPin> pins = new List<GpioPin>();
             //GpioPin pin;
@@ -419,12 +434,22 @@ namespace RuleEngineNet {
                 debug += pins[i].Read().ToString();
             }
             System.Diagnostics.Debug.WriteLine($"Sended {debug}");
-            while (DateTimeOffset.Now.ToUnixTimeMilliseconds() - startTime < Time) { }
 
-            foreach (var pin in pins) {
-                pin.Write(GpioPinValue.Low);
-                pin.Dispose();
-            }
+            task = Task.Run(() => {
+                while (DateTimeOffset.Now.ToUnixTimeMilliseconds() - startTime < Time) {
+                    if (ct.IsCancellationRequested) {
+                        break;
+                    }
+
+                }
+
+                foreach (var pin in pins) {
+                    pin.Write(GpioPinValue.Low);
+                    pin.Dispose();
+                }
+                ct.ThrowIfCancellationRequested();
+
+            }, ct);
             
             return;
         }
