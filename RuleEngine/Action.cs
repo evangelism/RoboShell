@@ -17,6 +17,7 @@ using RuleEngineNet;
 namespace RuleEngineNet {
     public abstract class Action {
         public abstract void Execute(State S);
+        public bool ActiveAfterExecution { get; set; } = false;
         public virtual bool LongRunning { get; } = false;
         public static Action LoadXml(XElement X) {
             switch (X.Name.LocalName) {
@@ -107,6 +108,7 @@ namespace RuleEngineNet {
             string EXTERNAL_ACTION_NAME_REGEX_PATTERN = BracketedConfigProcessor.VARNAME_REGEX_PATTERN;
             string EXTERNAL_REGEX = $"^ext:(?<method>{EXTERNAL_ACTION_NAME_REGEX_PATTERN})\\s+\".*\"$";
             string PLAY_REGEX = $"^play\\s+((?<probability>\\d*)\\s+)?\".*\"$";
+            string STAY_ACTIVE_REGEX = $"^stayActive$";
             Action action = null;
 
             string prettyActionSequence = actionSequence.Trim();
@@ -151,6 +153,10 @@ namespace RuleEngineNet {
                 }
                 else if (Regex.IsMatch(prettyActionSequence, SHUT_UP_REGEX)) {
                     action = new ShutUp();
+                }
+                else if (Regex.IsMatch(prettyActionSequence, STAY_ACTIVE_REGEX))
+                {
+                    action = new StayActive();
                 }
                 else if (Regex.IsMatch(prettyActionSequence, PLAY_REGEX))
                 {
@@ -253,7 +259,14 @@ namespace RuleEngineNet {
 
         public override void Execute(State S) {
             foreach (var x in Actions)
+            {
                 x.Execute(S);
+                if (x.ActiveAfterExecution) {
+                    ActiveAfterExecution = true;
+                    x.ActiveAfterExecution = false;
+                }
+
+            }
         }
 
         protected bool? long_running;
@@ -282,7 +295,12 @@ namespace RuleEngineNet {
         public OneOf(IEnumerable<Action> Actions) : base(Actions) { }
 
         public override void Execute(State S) {
-            Actions.OneOf().Execute(S);
+            var x = Actions.OneOf();
+            x.Execute(S);
+            if (x.ActiveAfterExecution){
+                ActiveAfterExecution = true;
+                x.ActiveAfterExecution = false;
+            }
         }
     }
 
@@ -354,6 +372,13 @@ namespace RuleEngineNet {
             return new Play(X.Attribute("FileName").Value, _prob);
         }
 
+    }
+
+    public class StayActive : Action
+    {
+        public override void Execute(State S) {
+            ActiveAfterExecution = true;
+        }
     }
 
     public class Extension : Action
