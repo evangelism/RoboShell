@@ -412,6 +412,8 @@ namespace RuleEngineNet {
         CancellationTokenSource tokenSource2;
         CancellationToken ct;
         private Task task = Task.CompletedTask;
+        private static Boolean stopExecution = false;
+        private static Boolean executing = false;
 
         public GPIO(IEnumerable<int> signal, int time, int probability) {
             this.Signal = new List<int>(signal);
@@ -435,12 +437,13 @@ namespace RuleEngineNet {
                 return;
             }
 
-            Task.WaitAll(task);
-            if (task.Status == TaskStatus.Running) {
-                System.Diagnostics.Debug.WriteLine("GPIO_TASK is running, will wait");
-                Task.WaitAll(task);
+            if (executing) {
+                stopExecution = true;
+                while (executing) {}
             }
 
+            stopExecution = false;
+            executing = true;
 
             List<GpioPin> pins = new List<GpioPin>();
             //GpioPin pin;
@@ -460,22 +463,19 @@ namespace RuleEngineNet {
             }
             System.Diagnostics.Debug.WriteLine($"Sended {debug}");
 
-            task = Task.Run(() => {
+            Task.Run(() => {
                 while (DateTimeOffset.Now.ToUnixTimeMilliseconds() - startTime < Time) {
-                    if (ct.IsCancellationRequested) {
-                        break;
-                    }
-
+                    if (stopExecution) break;
                 }
 
                 foreach (var pin in pins) {
                     pin.Write(GpioPinValue.Low);
                     pin.Dispose();
                 }
-                ct.ThrowIfCancellationRequested();
-
-            }, ct);
-            
+                System.Diagnostics.Debug.WriteLine("Disposed");
+                executing = false;
+            });
+            System.Diagnostics.Debug.WriteLine("Exited GPIO");
             return;
         }
 
