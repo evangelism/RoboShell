@@ -141,6 +141,7 @@ namespace RoboShell
                 LEDMgr.LEDS["RE"].Load(new LEDImage("eye_blink"));
                 LEDMgr.LEDS["M"].Load(new LEDImage("mouth_neutral"));
             }
+            InferenceTimer.Start();
         }
 
         private async void EndSpeech(object sender, RoutedEventArgs e)
@@ -204,7 +205,7 @@ namespace RoboShell
                 var st = $"Key_{args.VirtualKey - VirtualKey.Number0}";
                 Trace($"Initiating event {st}");
                 RE.SetVar("Event", st);
-                RE.Step();
+//                RE.Step();
             }
             // S = print state
             if (args.VirtualKey == VirtualKey.S)
@@ -339,7 +340,7 @@ namespace RoboShell
                 Trace("Initiating FaceIn Event");
                 RE.SetVar("Event", "FaceIn");
                 RE.Step();
-                InferenceTimer.Start();
+                if (! InferenceTimer.IsEnabled) InferenceTimer.Start(); //TODO check
             }
         }
 

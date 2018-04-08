@@ -1,6 +1,7 @@
 ﻿using RoboLogic;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -8,6 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 using Windows.Devices.Gpio;
+using Windows.UI.Xaml.Media;
 using RuleEngineNet;
 
 // ReSharper disable StringLastIndexOfIsCultureSpecific.1
@@ -323,8 +325,15 @@ namespace RuleEngineNet {
             {
                 return;
             }
+
+            while (!Speaker.CanPlay()) {
+                System.Diagnostics.Debug.WriteLine("cant play");
+                Task t = Task.Delay(TimeSpan.FromSeconds(1));
+                t.Wait();
+            }
+
+            System.Diagnostics.Debug.WriteLine("say" + S.EvalString(Text));
             Speaker.Speak(S.EvalString(Text));
-            System.Diagnostics.Debug.WriteLine(S.EvalString(Text));
         }
 
         public static Say Parse(XElement X) {

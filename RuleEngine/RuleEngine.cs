@@ -87,7 +87,8 @@ namespace RuleEngineNet
                 else rule.Active = false;
                 return true;
             }
-            else return false;
+            return false;
+
         }
 
         public bool StepUntilLongRunning()
