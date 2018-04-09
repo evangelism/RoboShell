@@ -37,14 +37,10 @@ namespace RoboLogic
         }
 
         public async void Speak(string s) {
-            if (isPlaying) return;
-            isPlaying = true;
             var x = await Synthesizer.SynthesizeTextToStreamAsync(s);
-            Media.AutoPlay = true; // that's the default value
+            Media.AutoPlay = true;
             Media.SetSource(x, x.ContentType);
-            Media.Volume = 1.0;
             Media.Play();
-            isPlaying = false;
         }
 
         public void ShutUp() {

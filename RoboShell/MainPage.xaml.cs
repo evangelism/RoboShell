@@ -27,6 +27,7 @@ using System.Text;
 using System.Net;
 using Windows.Devices.Gpio;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 // Это приложение получает ваше изображение с веб-камеры и
 // распознаёт эмоции на нём, обращаясь к Cognitive Services
@@ -348,18 +349,20 @@ namespace RoboShell
             if (!IsFacePresent) {
                 return false;
             }
+            var startTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
             Trace("RecognizeFace() started");
             FaceWaitTimer.Stop();
-
             var photoAsStream = new MemoryStream();
             await MC.CapturePhotoToStreamAsync(ImageEncodingProperties.CreateJpeg(), photoAsStream.AsRandomAccessStream());
 
             byte[] photoAsByteArray = photoAsStream.ToArray();
 
+            var startTime2 = DateTimeOffset.Now.ToUnixTimeMilliseconds();
             Trace("BEFORE ProcessPhotoAsync()");
             PhotoInfoDTO photoInfo = await ProcessPhotoAsync(photoAsByteArray, Config.RecognizeEmotions);
             Trace("AFTER ProcessPhotoAsync()");
-
+            var endTime2 = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+            var res2 = endTime2 - startTime2;
             if (photoInfo.FoundAndProcessedFaces) {
                 RE.SetVar("FaceCount", photoInfo.FaceCountAsString);
                 RE.SetVar("Gender", photoInfo.Gender);
@@ -367,14 +370,17 @@ namespace RoboShell
                 if (Config.RecognizeEmotions) {
                     RE.SetVar("Emotion", photoInfo.Emotion);
                 }
-
+                var endTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+                var res = endTime - startTime;
                 Trace($"Face data: #faces={RE.State.Eval("FaceCount")}, age={RE.State.Eval("Age")}, gender={RE.State.Eval("Gender")}, emo={RE.State.Eval("Emotion")}");
-                Trace("RecognizeFace() finished");
+                Trace($"RecognizeFace() finished. Took {res} millis, {res2} in the cloud");
                 return true;
             }
             else {
                 FaceWaitTimer.Start();
-                Trace("RecognizeFace() finished");
+                var endTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+                var res = endTime - startTime;
+                Trace($"RecognizeFace() finished. Took {res} millis, {res2} in the cloud");
                 return false;
             }
         }
@@ -391,7 +397,11 @@ namespace RoboShell
 
             using (StringContent content = new StringContent(json.ToString(), Encoding.UTF8, "application/json")){
                 try {
+                    var t1 = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+                    Debug.WriteLine("Before sent to network");
                     HttpResponseMessage response = await httpClient.PostAsync(Config.CognitiveEndpoint, content);
+                    var res = DateTimeOffset.Now.ToUnixTimeMilliseconds() - t1;
+                    Debug.WriteLine($"After sent to network {res}");
                     if (response.StatusCode.Equals(HttpStatusCode.OK)) {
                         photoInfoDTO = JsonConvert.DeserializeObject<PhotoInfoDTO>(await response.Content.ReadAsStringAsync());
                     }

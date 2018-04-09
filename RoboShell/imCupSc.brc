@@ -38,7 +38,7 @@
 	(Stage = "poduwkaDriven") or (Stage = "quiz")
 ) 
 
-($Stage == "quiz") => (
+(($Stage == "quiz") and ($isPlaying == "false")) => (
 	(Answers = "") and (Stage = "quizQuestion_1") and (Cnct = "False")
 )
 

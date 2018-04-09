@@ -325,14 +325,9 @@ namespace RuleEngineNet {
             {
                 return;
             }
+            
 
-            while (!Speaker.CanPlay()) {
-                System.Diagnostics.Debug.WriteLine("cant play");
-                Task t = Task.Delay(TimeSpan.FromSeconds(1));
-                t.Wait();
-            }
-
-            System.Diagnostics.Debug.WriteLine("say" + S.EvalString(Text));
+            System.Diagnostics.Debug.WriteLine("say: " + S.EvalString(Text));
             Speaker.Speak(S.EvalString(Text));
         }
 
