@@ -1,20 +1,22 @@
 ﻿RobotName = "Лариса Сергеевна"
 
 (($Cnct == "True") and (($Event == "Key_6") or ($Event == "Key_7"))) => (
-	(KeyboardIn = "${Event}") and (clear $Event)
+	(KeyboardIn = "${Event}") and (clear $Event) and (stayActive)
 )
 
 (($Cnct == "True") and (($ArduinoInput == "0100") or ($KeyboardIn == "Key_6"))) => (
-    (Answers = "${Tmp}1") and (Cnct = "False") and (clear $KeyboardIn) and (GPIO 100 0,0,0,0 500)
+    (Answers = "${Tmp}1") and (Cnct = "False") and (clear $KeyboardIn) and (GPIO 100 0,0,0,0 500) and (stayActive)
 )
 
 (($Cnct == "True") and (($ArduinoInput == "0010") or ($KeyboardIn == "Key_7"))) => (
-    (Answers = "${Tmp}0") and (Cnct = "False") and (clear $KeyboardIn) and (GPIO 100 0,0,0,0 500)
+    (Answers = "${Tmp}0") and (Cnct = "False") and (clear $KeyboardIn) and (GPIO 100 0,0,0,0 500) and (stayActive)
 )
 
 ($Event == "Key_1") => ((Stage = "startConversation") and (clear $Event))
 
-(($Event == "FaceInQ") and ($FaceCount == 1)) => ((say "привет") and (Stage = "startConversation") and (clear $Event))
+($Event == "Key_2") => ((GPIO 100 1,1,1,0 10000) and (stayActive) and (clear $Event))
+
+(($Event == "FaceIn") and ($FaceCount == 1)) => ((say "привет") and (Stage = "startConversation") and (clear $Event))
 
 (($Event == "FaceIn") and ($FaceCount > 1)) => (
 	(say "уйдите лишние! оставьте одного!") and 
@@ -38,13 +40,9 @@
 	(Stage = "poduwkaDriven") or (Stage = "quiz")
 ) 
 
-(($Stage == "quiz") and ($isPlaying == "false")) => (
+($Stage == "quiz") => (
 	(Answers = "") and (Stage = "quizQuestion_1") and (Cnct = "False")
 )
-
-
-
-
 
 (($Stage == "quizQuestion_1") and ($Cnct != "True")) =>
 (
@@ -64,7 +62,7 @@
     and (Stage = "Result")
 )
 
-($Stage == "Result") =>
+(($Stage == "Result") and ($Cnct != "True")) =>
 (
-    (say "Твои ответы - ${Answers}") and (Stage = "Finished")
+    (say "Твои ответы - ${Answers}") and (Stage = "Finished") and (GPIO 100 1,1,1,0 10000)
 )

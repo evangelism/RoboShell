@@ -9,6 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 using Windows.Devices.Gpio;
+using Windows.UI.Core;
 using Windows.UI.Xaml.Media;
 using RuleEngineNet;
 
@@ -307,9 +308,11 @@ namespace RuleEngineNet {
     }
 
     public class Say : Action {
-        public static ISpeaker Speaker { get; set; }
+        public static UWPLocalSpeaker Speaker { get; set; }
         public int Probability { get; set; }
         public string Text { get; set; }
+
+        private static bool isPlaying = false;
 
         public Say(string Text, int Probability) {
             this.Text = Text;
@@ -327,17 +330,33 @@ namespace RuleEngineNet {
             }
             
 
-            System.Diagnostics.Debug.WriteLine("say: " + S.EvalString(Text));
-            Speaker.Speak(S.EvalString(Text));
+            Debug.WriteLine("say: " + S.EvalString(Text));
+            SayHelper(S.EvalString(Text));
         }
 
         public static Say Parse(XElement X) {
             return new Say(X.Attribute("Text").Value, 100);
         }
+        public async void SayHelper(String Text)
+        {
+            while (isPlaying)
+            {
+                await Task.Delay(TimeSpan.FromMilliseconds(300));
+            }
+            isPlaying = true;
+            await Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunTaskAsync(() => Speaker.Speak(Text));
+            await Task.Delay(TimeSpan.FromMilliseconds(500));
+            while (Speaker.Media.CurrentState != MediaElementState.Closed && Speaker.Media.CurrentState != MediaElementState.Stopped && Speaker.Media.CurrentState != MediaElementState.Paused) {
+                await Task.Delay(TimeSpan.FromMilliseconds(500));
+            }
+            isPlaying = false;
+        }
+
     }
 
+
     public class ShutUp : Action {
-        public static ISpeaker Speaker { get; set; }
+        public static UWPLocalSpeaker Speaker { get; set; }
         public override void Execute(State S) {
             Speaker.ShutUp();
         }
@@ -350,7 +369,7 @@ namespace RuleEngineNet {
     public class Play : Action
     {
         private const string WAV_PATH_PREFIX = "ms-appx:///Sounds/";
-        public static ISpeaker Speaker { get; set; }
+        public static UWPLocalSpeaker Speaker { get; set; }
         public int Probability { get; set; }
         public Uri FileName { get; set; }//TODO type
         public Play(string filename, int prob)
@@ -495,4 +514,31 @@ namespace RuleEngineNet {
         }
     }
 
+
+
+    public static class DispatcherTaskExtensions
+    {
+        public static async Task<T> RunTaskAsync<T>(this CoreDispatcher dispatcher,
+            Func<Task<T>> func, CoreDispatcherPriority priority = CoreDispatcherPriority.Normal)
+        {
+            var taskCompletionSource = new TaskCompletionSource<T>();
+            await dispatcher.RunAsync(priority, async () =>
+            {
+                try
+                {
+                    taskCompletionSource.SetResult(await func());
+                }
+                catch (Exception ex)
+                {
+                    taskCompletionSource.SetException(ex);
+                }
+            });
+            return await taskCompletionSource.Task;
+        }
+
+        // There is no TaskCompletionSource<void> so we use a bool that we throw away.
+        public static async Task RunTaskAsync(this CoreDispatcher dispatcher,
+            Func<Task> func, CoreDispatcherPriority priority = CoreDispatcherPriority.Normal) =>
+            await RunTaskAsync(dispatcher, async () => { await func(); return false; }, priority);
+    }
 }

@@ -36,7 +36,7 @@ namespace RuleEngineNet
             this.InitialState = S;
         }
 
-        public void SetSpeaker(ISpeaker spk)
+        public void SetSpeaker(UWPLocalSpeaker spk)
         {
             Say.Speaker = (UWPLocalSpeaker) spk;
             Play.Speaker = spk;

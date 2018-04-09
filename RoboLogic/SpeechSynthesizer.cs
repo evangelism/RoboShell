@@ -11,16 +11,16 @@ using Windows.UI.Xaml.Media;
 
 namespace RoboLogic
 {
-    public interface ISpeaker
-    {
-        void Speak(string s);
-        void ShutUp();
-        void Play(Uri filename);
+//    public interface ISpeaker
+//    {
+//        void Speak(string s);
+//        void ShutUp();
+//        void Play(Uri filename);
+//
+//        bool CanPlay();
+//    }
 
-        bool CanPlay();
-    }
-
-    public class UWPLocalSpeaker : ISpeaker
+    public class UWPLocalSpeaker //: ISpeaker
     {
         public SpeechSynthesizer Synthesizer = new SpeechSynthesizer();
         public MediaElement Media { get; set; }
@@ -36,7 +36,7 @@ namespace RoboLogic
             if (v != null) Synthesizer.Voice = v;
         }
 
-        public async void Speak(string s) {
+        public async Task Speak(string s) {
             var x = await Synthesizer.SynthesizeTextToStreamAsync(s);
             Media.AutoPlay = true;
             Media.SetSource(x, x.ContentType);
