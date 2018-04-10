@@ -34,10 +34,10 @@
     
     
     
-    <!-- Process FaceIn Event -->
+    <!-- Process FaceRecognized Event -->
     <Rule>
       <If>
-        <Compare Var="Event" Value="FaceIn"/>
+        <Compare Var="Event" Value="FaceRecognized"/>
       </If>
       <Then>
         <Extension Command="LED" Param="M:mouth_smile"/>
@@ -76,7 +76,7 @@
 
     <Rule>
       <If>
-        <Compare Var="Event" Value="FaceIn"/>
+        <Compare Var="Event" Value="FaceRecognized"/>
         <Compare Var="FaceCount" Value="1"/>
       </If>
       <Then>
@@ -90,7 +90,7 @@
     </Rule>
     <Rule>
       <If>
-        <Compare Var="Event" Value="FaceIn"/>
+        <Compare Var="Event" Value="FaceRecognized"/>
         <Compare Var="FaceCount" Type="gt" Value="1"/>
       </If>
       <Then>
