@@ -73,15 +73,27 @@ namespace RuleEngineNet {
                                         string possibleAction2Substring =
                                             restOfString.Substring(restOfString.IndexOf("and") + "and".Length);
                                         Action action2 = ParseActionSequence(possibleAction2Substring);
-                                        if (action1 != null && action2 != null) {
-                                            action = new CombinedAction(new List<Action> {action1, action2});
+                                        if (action2 != null) {
+                                            action = new CombinedAction(new List<Action> {action1});
+                                            if (action2 is CombinedAction action2AsCombinedAction) {
+                                                ((CombinedAction) action).Actions.AddRange(action2AsCombinedAction.Actions);
+                                            }
+                                            else {
+                                                ((CombinedAction)action).Actions.Add(action2);
+                                            }
                                         }
                                     }
                                     else if (Regex.IsMatch(restOfString, @"^\s*\)\s*(or|OR).+$")) {
                                         string possibleAction2Substring = restOfString.Substring(restOfString.IndexOf("or") + "or".Length);
                                         Action action2 = ParseActionSequence(possibleAction2Substring);
-                                        if (action1 != null && action2 != null) {
-                                            action = new OneOf(new List<Action> {action1, action2});
+                                        if (action2 != null) {
+                                            action = new OneOf(new List<Action> {action1});
+                                            if (action2 is OneOf action2AsOneOf) {
+                                                ((OneOf)action).Actions.AddRange(action2AsOneOf.Actions);
+                                            }
+                                            else {
+                                                ((OneOf) action).Actions.Add(action2);
+                                            }
                                         }
                                     }
                                 }
@@ -102,7 +114,7 @@ namespace RuleEngineNet {
         }
 
         private static Action ParseAtomicAction(string actionSequence) {
-            string ASSIGNEMENT_STRING_REGEX = $"^(?<var>{BracketedConfigProcessor.VARNAME_REGEX_PATTERN})\\s*=\\s*\\\"(?<value>\\S+)\\\"$";
+            string ASSIGNEMENT_STRING_REGEX = $"^(?<var>{BracketedConfigProcessor.VARNAME_REGEX_PATTERN})\\s*=\\s*\\\"(?<value>\\S*)\\\"$";
             string ASSIGNEMENT_REGEX = $"^(?<var>{BracketedConfigProcessor.VARNAME_REGEX_PATTERN})\\s*=\\s*(?<value>\\S+)$";
             string CLEAR_REGEX = $"^clear\\s+\\$(?<var>{BracketedConfigProcessor.VARNAME_REGEX_PATTERN})$";
             string SAY_REGEX = $"^say\\s+((?<probability>\\d*)\\s+)?\".*\"$";
@@ -112,6 +124,7 @@ namespace RuleEngineNet {
             string EXTERNAL_REGEX = $"^ext:(?<method>{EXTERNAL_ACTION_NAME_REGEX_PATTERN})\\s+\".*\"$";
             string PLAY_REGEX = $"^play\\s+((?<probability>\\d*)\\s+)?\".*\"$";
             string STAY_ACTIVE_REGEX = $"^stayActive$";
+            string COMPARE_ANSWERS_REGEX = $"^compareAnswers\\s+(?<goodAnswer>{BracketedConfigProcessor.VARNAME_REGEX_PATTERN})\\s+(?<realAnswer>{BracketedConfigProcessor.VARNAME_REGEX_PATTERN})$"; ;
             Action action = null;
 
             string prettyActionSequence = actionSequence.Trim();
@@ -160,6 +173,14 @@ namespace RuleEngineNet {
                 else if (Regex.IsMatch(prettyActionSequence, STAY_ACTIVE_REGEX))
                 {
                     action = new StayActive();
+                }
+                else if (Regex.IsMatch(prettyActionSequence, COMPARE_ANSWERS_REGEX))
+                {
+                    Match m = Regex.Match(prettyActionSequence, COMPARE_ANSWERS_REGEX);
+                    if (m.Length != 0)
+                    {
+                        action = new CompareAnswers(m.Groups["goodAnswer"].Value, m.Groups["realAnswer"].Value);
+                    }
                 }
                 else if (Regex.IsMatch(prettyActionSequence, PLAY_REGEX))
                 {
@@ -312,7 +333,7 @@ namespace RuleEngineNet {
         public int Probability { get; set; }
         public string Text { get; set; }
 
-        private static bool isPlaying = false;
+        public static bool isPlaying = false;
 
         public Say(string Text, int Probability) {
             this.Text = Text;
@@ -331,29 +352,80 @@ namespace RuleEngineNet {
             
 
             Debug.WriteLine("say: " + S.EvalString(Text));
-            SayHelper(S.EvalString(Text));
+            SayHelper(S.EvalString(Text), S);
         }
 
         public static Say Parse(XElement X) {
             return new Say(X.Attribute("Text").Value, 100);
         }
-        public async void SayHelper(String Text)
+        public async void SayHelper(String Text, State S)
         {
+            Debug.WriteLine("1");
             while (isPlaying)
             {
                 await Task.Delay(TimeSpan.FromMilliseconds(300));
             }
+            Debug.WriteLine("2");
             isPlaying = true;
+            S.Assign("isPlaying", "True");
+            Debug.WriteLine("3");
             await Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunTaskAsync(() => Speaker.Speak(Text));
+            Debug.WriteLine("4");
             await Task.Delay(TimeSpan.FromMilliseconds(500));
+            Debug.WriteLine("5");
             while (Speaker.Media.CurrentState != MediaElementState.Closed && Speaker.Media.CurrentState != MediaElementState.Stopped && Speaker.Media.CurrentState != MediaElementState.Paused) {
                 await Task.Delay(TimeSpan.FromMilliseconds(500));
             }
+            Debug.WriteLine("6");
             isPlaying = false;
+            S.Assign("isPlaying", "False");
         }
 
     }
 
+    public class CompareAnswers : Action {
+        public string correctAnswersVarName;
+        public string realAnswersVarName;
+
+        public CompareAnswers(string correctAnswersVarName, string realAnswersVarName) {
+            this.correctAnswersVarName = correctAnswersVarName;
+            this.realAnswersVarName = realAnswersVarName;
+        }
+
+        public override void Execute(State S)
+        {
+            if (S.ContainsKey(correctAnswersVarName) && S.ContainsKey(realAnswersVarName)) {
+                var tmp1 = S[correctAnswersVarName];
+                var tmp2 = S[realAnswersVarName];
+                if (tmp1.Length != tmp2.Length) {
+                    S["comparisonRes"] = "error";
+                    S["comparisonErrors"] = "error";
+                    return ;
+                }
+
+                int numOfQuestions = tmp1.Length;
+                int numOfGoodQuestions = 0;
+                List<int> badQuestions = new List<int>();
+                for (int i = 0; i < numOfQuestions; i++)
+                {
+                    if (tmp1[i] == tmp2[i])
+                    {
+                        numOfGoodQuestions += 1;
+                    }
+                    else {
+                        badQuestions.Add(i+1);
+                    }
+                }
+
+                string res = ((int) ((float) numOfGoodQuestions / numOfQuestions * 100)).ToString();
+                string errors = string.Join(", ", badQuestions.Select(x => x.ToString()).ToArray());
+                S["comparisonRes"] = res;
+                S["comparisonErrors"] = errors;
+            }
+        }
+
+
+    }
 
     public class ShutUp : Action {
         public static UWPLocalSpeaker Speaker { get; set; }
@@ -513,8 +585,6 @@ namespace RuleEngineNet {
             }
         }
     }
-
-
 
     public static class DispatcherTaskExtensions
     {

@@ -149,6 +149,8 @@ namespace RuleEngineNet
             foreach (var v in t) {
                 S.Add(v.Attribute("Name").Value, v.Attribute("Value").Value);
             }
+
+            S["isPlaying"] = "False";
             return new RuleEngine(KB, S);
         }
     }
@@ -165,6 +167,8 @@ namespace RuleEngineNet
             Task.WaitAll(t);
 
             State initialState = kbContent.Item1;
+            initialState["isPlaying"] = "False";
+
 
             List<Rule> rules = kbContent.Item2;
 

@@ -12,7 +12,7 @@
     (Answers = "${Tmp}0") and (Cnct = "False") and (clear $KeyboardIn) and (GPIO 100 0,0,0,0 500) and (stayActive)
 )
 
-($Event == "Key_1") => ((Stage = "startConversation") and (clear $Event))
+($Event == "Key_1") => ((Stage = "quiz") and (clear $Event) and (GPIO 100 0,0,0,0 500) and (stayActive))
 
 ($Event == "Key_2") => ((GPIO 100 1,1,1,0 10000) and (stayActive) and (clear $Event))
 
@@ -41,28 +41,33 @@
 ) 
 
 ($Stage == "quiz") => (
-	(Answers = "") and (Stage = "quizQuestion_1") and (Cnct = "False")
+	(Answers = "") and (Stage = "quizQuestion_1") and (Cnct = "False") and (quizAnswers = "010")
 )
 
-(($Stage == "quizQuestion_1") and ($Cnct != "True")) =>
+(($Stage == "quizQuestion_1") and ($Cnct != "True") and ($isPlaying != "True")) =>
 (
-    (say "Вопрос первый") and (GPIO 100 1,0,1,1 10000) and (Tmp = "${Answers}") and (Cnct = "True")
+    and (say "Вопрос первый") and (GPIO 100 1,0,1,1 10000) and (Tmp = "${Answers}") and (Cnct = "True")
     and (Stage = "quizQuestion_2")
 )
 
-(($Stage == "quizQuestion_2") and ($Cnct != "True")) =>
+(($Stage == "quizQuestion_2") and ($Cnct != "True") and ($isPlaying != "True")) =>
 (
     (say "Вопрос второй") and (GPIO 100 1,0,1,1 10000) and (Tmp = "${Answers}") and (Cnct = "True")
     and (Stage = "quizQuestion_3")
 )
 
-(($Stage == "quizQuestion_3") and ($Cnct != "True")) =>
+(($Stage == "quizQuestion_3") and ($Cnct != "True") and ($isPlaying != "True")) =>
 (
     (say "Вопрос третий") and (GPIO 100 1,0,1,1 10000) and (Tmp = "${Answers}") and (Cnct = "True")
-    and (Stage = "Result")
+    and (Stage = "quizCheck")
 )
 
-(($Stage == "Result") and ($Cnct != "True")) =>
+(($Stage == "quizCheck") and ($Cnct != "True") and ($isPlaying != "True")) => (
+	(compareAnswers quizAnswers Answers) and 
+	(Stage = "quizResult")
+)
+
+(($Stage == "quizResult") and ($Cnct != "True") and ($isPlaying != "True")) =>
 (
-    (say "Твои ответы - ${Answers}") and (Stage = "Finished") and (GPIO 100 1,1,1,0 10000)
+    (say "Процент правильных ответов ${comparisonRes}, ошибочные ответы даны на вопросы ${comparisonErrors}") and (Stage = "Finished") and (GPIO 100 1,1,1,0 10000)
 )
