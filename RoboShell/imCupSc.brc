@@ -16,7 +16,7 @@
 
 ($Event == "Key_2") => ((GPIO 100 1,1,1,0 10000) and (stayActive) and (clear $Event))
 
-(($Event == "FaceIn") and ($FaceCount == 1)) => ((say "привет") and (Stage = "startConversation") and (clear $Event))
+($Event == "FaceIn") => ((say "привет") and (Stage = "startConversation") and (clear $Event))
 
 (($Event == "FaceIn") and ($FaceCount > 1)) => (
 	(say "уйдите лишние! оставьте одного!") and 
@@ -31,7 +31,7 @@
 	(clear $Event)
 )
 
-(($Stage == "startConversation") and ($isPlaying != "True"))=> (
+(($Event == "FaceRecognized") and ($Stage == "startConversation") and ($isPlaying != "True"))=> (
 	(say "Человек! то, что ты {${Emotion}:happiness=весёлый|не весёлый} -- это чудо. Надо с этим что-то делать.") and 
 	(Stage = "quiz")
 )
