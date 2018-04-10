@@ -27,6 +27,10 @@ using System.Text;
 using System.Net;
 using Windows.Devices.Gpio;
 using System.Collections.Generic;
+using Windows.Storage;
+using Microsoft.Extensions.Logging;
+using Serilog;
+using Serilog.Core;
 
 // Это приложение получает ваше изображение с веб-камеры и
 // распознаёт эмоции на нём, обращаясь к Cognitive Services
@@ -63,7 +67,7 @@ namespace RoboShell
 
         private GpioPin[] ArduinoPins;
         private readonly int[] ArduinoPinsNumbers = Config.InputPinsNumbers; //must change
-
+        readonly Logger logger; // logger
         GpioController gpio;
 
         private void InitGpio()
@@ -95,6 +99,7 @@ namespace RoboShell
 
         public MainPage()
         {
+            logger = new LoggerConfiguration().WriteTo.File($"{ApplicationData.Current.LocalFolder.Path}\\Logs\\App.log").CreateLogger(); // logger
             this.InitializeComponent();
         }
 
@@ -141,6 +146,7 @@ namespace RoboShell
                 LEDMgr.LEDS["RE"].Load(new LEDImage("eye_blink"));
                 LEDMgr.LEDS["M"].Load(new LEDImage("mouth_neutral"));
             }
+            logger.Information("Test"); // logger
         }
 
         private async void EndSpeech(object sender, RoutedEventArgs e)
