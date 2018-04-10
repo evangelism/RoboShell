@@ -31,7 +31,7 @@
 	(clear $Event)
 )
 
-($Stage == "startConversation") => (
+(($Stage == "startConversation") and ($isPlaying != "True"))=> (
 	(say "Человек! то, что ты {${Emotion}:happiness=весёлый|не весёлый} -- это чудо. Надо с этим что-то делать.") and 
 	(Stage = "quiz")
 )

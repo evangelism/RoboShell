@@ -191,7 +191,7 @@
       <Version>6.0.8</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.ProjectOxford.Emotion">
-      <Version>1.0.336</Version>
+      <Version>1.0.331.1</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.ProjectOxford.Face">
       <Version>1.4.0</Version>
