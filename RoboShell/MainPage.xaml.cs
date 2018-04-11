@@ -68,7 +68,7 @@ namespace RoboShell
 
         private GpioPin[] ArduinoPins;
         private readonly int[] ArduinoPinsNumbers = Config.InputPinsNumbers; //must change
-        readonly Logger logger; // logger
+        readonly Logger Log; // logger
         GpioController gpio;
 
         private void InitGpio()
@@ -100,7 +100,12 @@ namespace RoboShell
 
         public MainPage()
         {
-            logger = new LoggerConfiguration().WriteTo.File($"{ApplicationData.Current.LocalFolder.Path}\\Logs\\App.log").CreateLogger(); // logger
+            var logPath = Path.Combine(Environment.ExpandEnvironmentVariables("%userprofile"), "Documents");
+            Log = new LoggerConfiguration()
+                .MinimumLevel.Debug()
+                .WriteTo.File(logPath + "\\logs\\Roboshell.log", rollingInterval: RollingInterval.Day)
+                .CreateLogger(); // logger
+            Log.Information("Logger was initialized");
             this.InitializeComponent();
         }
 
@@ -110,6 +115,7 @@ namespace RoboShell
         {
             System.Diagnostics.Debug.WriteLine(s);
             if (!Config.Headless) log.Text += s + "\r\n";
+            Log?.Information(s);
         }
 
         /// <summary>
@@ -148,7 +154,7 @@ namespace RoboShell
                 LEDMgr.LEDS["M"].Load(new LEDImage("mouth_neutral"));
             }
             InferenceTimer.Start();
-            logger.Information("Test"); // logger
+            Log.Information("Test"); // logger
         }
 
         private async void EndSpeech(object sender, RoutedEventArgs e)
