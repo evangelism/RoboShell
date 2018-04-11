@@ -15,5 +15,6 @@ namespace RoboShell
         public static bool Headless = false;
         public static string KBFileName = "imCupSc.brc";
         public static int[] InputPinsNumbers = { 6, 13, 19, 26 };
+        public static double facesRelation = 1.5;
     }
 }

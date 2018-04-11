@@ -277,7 +277,8 @@ namespace RoboShell
         /// </summary>
         private async void FaceDetectedEvent(FaceDetectionEffect sender, FaceDetectedEventArgs args)
         {
-            await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => HighlightDetectedFace(args.ResultFrame.DetectedFaces.FirstOrDefault()));
+            await HighlightDetectedFaces(args.ResultFrame.DetectedFaces);
+//            await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => HighlightDetectedFace(args.ResultFrame.DetectedFaces.FirstOrDefault()));
         }
 
         /// <summary>
@@ -318,6 +319,27 @@ namespace RoboShell
                 {
                     IsFacePresent = true;
                     if (!InDialog) FaceWaitTimer.Start(); // wait for 3 seconds to make sure face stable
+                }
+            }
+        }
+
+        private async Task HighlightDetectedFaces(IReadOnlyList<DetectedFace> faces) {
+            var tmp = (from face in faces orderby face.FaceBox.Width*face.FaceBox.Height descending select face).ToList();
+            if (tmp.Any()){
+                var biggest = tmp[0];
+                if (tmp.Count > 1) {
+                    var secondBiggest = tmp[1];
+                    if ((float) secondBiggest.FaceBox.Height * secondBiggest.FaceBox.Width * Config.facesRelation > 
+                        (float) biggest.FaceBox.Height * biggest.FaceBox.Width) {
+                        // both faces are close enough
+                        await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => HighlightDetectedFace(biggest));
+                    }
+                    else {
+                        await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => HighlightDetectedFace(biggest));
+                    }
+                }
+                else {
+                    await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => HighlightDetectedFace(biggest));
                 }
             }
         }
