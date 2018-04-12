@@ -17,5 +17,6 @@ namespace RoboShell
         public static bool analyzeOnlyOneFace = true;
         public static int[] InputPinsNumbers = { 6, 13, 19, 26 };
         public static double facesRelation = 1.5;
+        public static double biggestFaceRelativeSize = 0.01;
     }
 }

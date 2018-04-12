@@ -326,7 +326,7 @@ namespace RoboShell
         private async Task HighlightDetectedFaces(IReadOnlyList<DetectedFace> faces) {
             var tmp = (from face in faces orderby face.FaceBox.Width*face.FaceBox.Height descending select face).ToList();
             
-            if (tmp.Any()){
+            if (tmp.Any() && tmp[0].FaceBox.Width * tmp[0].FaceBox.Height > VideoProps.Width*VideoProps.Height*Config.biggestFaceRelativeSize){
                 var biggest = tmp[0];
                 int facesCnt = 1;
                 for (; facesCnt < tmp.Count; facesCnt++) {
