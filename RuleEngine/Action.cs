@@ -9,6 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 using Windows.Devices.Gpio;
+using Windows.Storage;
 using Windows.UI.Core;
 using Windows.UI.Xaml.Media;
 using RuleEngineNet;
@@ -123,8 +124,9 @@ namespace RuleEngineNet {
             string EXTERNAL_ACTION_NAME_REGEX_PATTERN = BracketedConfigProcessor.VARNAME_REGEX_PATTERN;
             string EXTERNAL_REGEX = $"^ext:(?<method>{EXTERNAL_ACTION_NAME_REGEX_PATTERN})\\s+\".*\"$";
             string PLAY_REGEX = $"^play\\s+((?<probability>\\d*)\\s+)?\".*\"$";
+            string PLAY_DELAY_REGEX = $"^play\\s+((?<probability>\\d*)\\s+)?\".*\"(\\s+(?<time>\\d+))?$";
             string STAY_ACTIVE_REGEX = $"^stayActive$";
-            string COMPARE_ANSWERS_REGEX = $"^compareAnswers\\s+(?<goodAnswer>{BracketedConfigProcessor.VARNAME_REGEX_PATTERN})\\s+(?<realAnswer>{BracketedConfigProcessor.VARNAME_REGEX_PATTERN})$"; ;
+            string COMPARE_ANSWERS_REGEX = $"^compareAnswers\\s+(?<goodAnswer>{BracketedConfigProcessor.VARNAME_REGEX_PATTERN})\\s+(?<realAnswer>{BracketedConfigProcessor.VARNAME_REGEX_PATTERN})$";
             Action action = null;
 
             string prettyActionSequence = actionSequence.Trim();
@@ -182,14 +184,14 @@ namespace RuleEngineNet {
                         action = new CompareAnswers(m.Groups["goodAnswer"].Value, m.Groups["realAnswer"].Value);
                     }
                 }
-                else if (Regex.IsMatch(prettyActionSequence, PLAY_REGEX))
+                else if (Regex.IsMatch(prettyActionSequence, PLAY_DELAY_REGEX))
                 {
                     int firstQuotePosition = prettyActionSequence.IndexOf("\"");
                     int lastQuotePosition = prettyActionSequence.LastIndexOf("\"");
                     int start = firstQuotePosition + 1;
                     int len = lastQuotePosition - start;
                     string possibleString = prettyActionSequence.Substring(start, len);
-                    Match m = Regex.Match(prettyActionSequence, PLAY_REGEX);
+                    Match m = Regex.Match(prettyActionSequence, PLAY_DELAY_REGEX);
                     if (m.Length != 0 && m.Groups["probability"].Value.Length != 0)
                     {
                         probability = Int32.Parse(m.Groups["probability"].Value);
@@ -198,9 +200,22 @@ namespace RuleEngineNet {
                     {
                         probability = 100;
                     }
-                    if (BracketedConfigProcessor.AssertValidString(possibleString)) {
-                        action = new Play(possibleString, probability);
+                    Match m2 = Regex.Match(prettyActionSequence, PLAY_DELAY_REGEX);
+                    if (m2.Length != 0 && m2.Groups["time"].Value.Length != 0)
+                    {
+                        var time = Int32.Parse(m.Groups["time"].Value);
+                        if (BracketedConfigProcessor.AssertValidString(possibleString))
+                        {
+                            action = new Play(possibleString, probability, time);
+                        }
                     }
+                    else {
+                        if (BracketedConfigProcessor.AssertValidString(possibleString))
+                        {
+                            action = new Play(possibleString, probability);
+                        }
+                    }
+                    
                 }
                 else if (Regex.IsMatch(prettyActionSequence, GPIO_REGEX))
                 {
@@ -444,10 +459,17 @@ namespace RuleEngineNet {
         public static UWPLocalSpeaker Speaker { get; set; }
         public int Probability { get; set; }
         public Uri FileName { get; set; }//TODO type
+        private readonly int _duration = -1;
         public Play(string filename, int prob)
         {
             this.FileName = new Uri(WAV_PATH_PREFIX + filename);
             Probability = prob;
+        }
+
+        public Play(string filename, int prob, int duration) {
+            FileName = new Uri(WAV_PATH_PREFIX + filename);
+            Probability = prob;
+            _duration = duration;
         }
 
         public override bool LongRunning => true;
@@ -460,7 +482,14 @@ namespace RuleEngineNet {
             {
                 return;
             }
-            Speaker.Play(FileName);
+
+            if (_duration == -1) {
+                Speaker.Play(FileName);
+            }
+            else {
+                Speaker.Play(FileName, _duration);
+            }
+
         }
 
         public static Play Parse(XElement X, int _prob) {

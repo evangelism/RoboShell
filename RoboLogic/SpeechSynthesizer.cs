@@ -30,6 +30,7 @@ namespace RoboLogic
         public UWPLocalSpeaker(MediaElement Media, VoiceGender G)
         {
             this.Media = Media;
+            this.Media.AutoPlay = true;
             var v = (from x in SpeechSynthesizer.AllVoices
                      where (x.Gender == G && x.Language == "ru-RU")
                      select x).FirstOrDefault();
@@ -38,7 +39,6 @@ namespace RoboLogic
 
         public async Task Speak(string s) {
             var x = await Synthesizer.SynthesizeTextToStreamAsync(s);
-            Media.AutoPlay = true;
             Media.SetSource(x, x.ContentType);
             Media.Play();
         }
@@ -51,6 +51,14 @@ namespace RoboLogic
         {
             Media.Source = audioUri;
             Media.Play();
+        }
+
+        public async Task Play(Uri audioUri, int duration) {
+
+            Media.Source = audioUri;
+            Media.Play();
+            await Task.Delay(TimeSpan.FromMilliseconds(duration));
+            Media.Stop();
         }
 
         public bool CanPlay() {
