@@ -335,7 +335,17 @@ namespace RoboShell
                     }
                 }
                 RE.SetVar("FaceCount", facesCnt.ToString());
-                await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => HighlightDetectedFace(biggest));
+                if (Config.analyzeOnlyOneFace) {
+                    if (facesCnt == 1) {
+                        await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => HighlightDetectedFace(biggest));
+                    }
+                    else {
+                        await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => HighlightDetectedFace(null));
+                    }
+                }
+                else {
+                    await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => HighlightDetectedFace(biggest));
+                }
             }
             else {
                 await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => HighlightDetectedFace(null));
