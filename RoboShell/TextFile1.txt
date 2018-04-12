@@ -1,6 +1,2 @@
-﻿($Event == "Key_1") => (play "countdown.mp3" 2000)
-($Event == "Key_2") => (play "countdown.mp3" 4000)
-($Event == "Key_3") => (play "countdown.mp3" 6000)
-($Event == "Key_4") => (play "countdown.mp3" 8000)
-($Event == "Key_5") => (play "countdown.mp3" 10000)
+﻿($Event == "Key_1") => (say "hello")
 ($Event == "Key_0") => (play "countdown.mp3")

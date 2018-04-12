@@ -40,6 +40,8 @@ namespace RoboLogic
         public async Task Speak(string s) {
             var x = await Synthesizer.SynthesizeTextToStreamAsync(s);
             Media.SetSource(x, x.ContentType);
+            Media.Volume = 0.1;
+            Media.AutoPlay = true;
             Media.Play();
         }
 
@@ -50,12 +52,14 @@ namespace RoboLogic
         public void Play(Uri audioUri)
         {
             Media.Source = audioUri;
+            Media.AutoPlay = true;
             Media.Play();
         }
 
         public async Task Play(Uri audioUri, int duration) {
 
             Media.Source = audioUri;
+            Media.AutoPlay = true;
             Media.Play();
             await Task.Delay(TimeSpan.FromMilliseconds(duration));
             Media.Stop();
