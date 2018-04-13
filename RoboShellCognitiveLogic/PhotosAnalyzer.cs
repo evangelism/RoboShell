@@ -149,7 +149,8 @@ namespace RoboShellCognitiveLogic {
 
             List<Dictionary<string, double>> allEmotions = new List<Dictionary<string, double>>();
 
-            foreach (JToken rootToken in JArray.Parse(emotionsAPIResponse))
+            // TODO: foreach (JToken rootToken in JArray.Parse(emotionsAPIResponse))
+            JToken rootToken = JArray.Parse(emotionsAPIResponse).First;
             {
                 Dictionary<string, double> currentEmotions = new Dictionary<string, double>();
                 JEnumerable<JToken> emotionsScoresList = rootToken.Last.First.Children();
@@ -197,7 +198,9 @@ namespace RoboShellCognitiveLogic {
             int males = 0, females = 0, faceCount = 0;
             double sumage = 0;
             List<SingleFaceFaceAPIInfoDTO> faceApiInfos = new List<SingleFaceFaceAPIInfoDTO>();
-            foreach (JToken face in faces) {
+            // TODO: foreach (JToken face in faces)
+            JToken face = faces.First;
+            {
                 faceCount++;
 
                 if (face.SelectToken("faceAttributes").SelectToken("gender").ToString().Equals("male")) {
