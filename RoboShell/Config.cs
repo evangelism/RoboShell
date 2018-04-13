@@ -13,7 +13,7 @@ namespace RoboShell
         public static int MinBoringSeconds = 10;
         public static int MaxBoringSeconds = 11;
         public static bool Headless = false;
-        public static string KBFileName = "imCupSc.brc";
+        public static string KBFileName = "speechTest.brc";
         public static bool analyzeOnlyOneFace = true;
         public static int[] InputPinsNumbers = { 6, 13, 19, 26 };
         public static double facesRelation = 1.5;
