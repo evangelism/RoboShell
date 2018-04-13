@@ -2,6 +2,7 @@
 using System.IO;
 using Serilog;
 using Serilog.Core;
+using Windows.Storage;
 
 namespace LogLib
 {
@@ -13,20 +14,16 @@ namespace LogLib
             Information,
             Error
         }
-        
+
         //public static readonly Logger logger;
 
-        private static readonly string LogPath = Path.Combine(Environment.ExpandEnvironmentVariables("%userprofile"), "Documents");
+        //private static readonly string LogPath = Path.Combine(Environment.ExpandEnvironmentVariables("%userprofile"), "Documents");
 
-        private static Logger logger
-        {
-            //get => logger;
-            get => logger;
-            set => logger = new LoggerConfiguration()
+        private static readonly string LogPath = ApplicationData.Current.LocalFolder.Path;
+        private static Logger logger = new LoggerConfiguration()
                 .MinimumLevel.Debug()
                 .WriteTo.File(LogPath + "\\logs\\Roboshell.log", rollingInterval: RollingInterval.Day)
                 .CreateLogger();
-        }
 
         public static void Trace(string s)
         {
