@@ -199,7 +199,7 @@ namespace RoboShell
                 }
             }
             if (input != "0000") {
-//                Trace($"Received: {input}");
+                Trace($"Received: {input}");
             }
             RE.SetVar("ArduinoInput", input);
         }
