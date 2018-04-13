@@ -32,7 +32,7 @@
 )
 
 (($Event == "FaceRecognized") and ($Stage == "startConversation") and ($isPlaying != "True"))=> (
-	(say "Человек! то, что ты {${Emotion}:happiness=весёлый|не весёлый} -- это чудо. Надо с этим что-то делать.") and 
+	(say "Человек! то, что ты {${Emotion}:happiness=весёлый|не весёлый} -- это чудо. Сейчас будут вопросы. Правильные ответы -- нет да нет.") and 
 	(Stage = "quiz")
 )
 
