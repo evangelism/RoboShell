@@ -277,7 +277,8 @@ namespace RoboShell
         /// </summary>
         private async void FaceDetectedEvent(FaceDetectionEffect sender, FaceDetectedEventArgs args)
         {
-            await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => HighlightDetectedFace(args.ResultFrame.DetectedFaces.FirstOrDefault()));
+            await HighlightDetectedFaces(args.ResultFrame.DetectedFaces);
+//            await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => HighlightDetectedFace(args.ResultFrame.DetectedFaces.FirstOrDefault()));
         }
 
         /// <summary>
@@ -319,6 +320,35 @@ namespace RoboShell
                     IsFacePresent = true;
                     if (!InDialog) FaceWaitTimer.Start(); // wait for 3 seconds to make sure face stable
                 }
+            }
+        }
+
+        private async Task HighlightDetectedFaces(IReadOnlyList<DetectedFace> faces) {
+            var tmp = (from face in faces orderby face.FaceBox.Width*face.FaceBox.Height descending select face).ToList();
+            
+            if (tmp.Any() && tmp[0].FaceBox.Width * tmp[0].FaceBox.Height > VideoProps.Width*VideoProps.Height*Config.biggestFaceRelativeSize){
+                var biggest = tmp[0];
+                int facesCnt = 1;
+                for (; facesCnt < tmp.Count; facesCnt++) {
+                    if (faces[facesCnt].FaceBox.Height * faces[facesCnt].FaceBox.Width * Config.facesRelation < biggest.FaceBox.Height * biggest.FaceBox.Width) {
+                        break;
+                    }
+                }
+                RE.SetVar("FaceCount", facesCnt.ToString());
+                if (Config.analyzeOnlyOneFace) {
+                    if (facesCnt == 1) {
+                        await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => HighlightDetectedFace(biggest));
+                    }
+                    else {
+                        await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => HighlightDetectedFace(null));
+                    }
+                }
+                else {
+                    await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => HighlightDetectedFace(biggest));
+                }
+            }
+            else {
+                await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => HighlightDetectedFace(null));
             }
         }
 
