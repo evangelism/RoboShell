@@ -37,6 +37,7 @@ namespace RoboLogic
         }
 
         public async Task Speak(string s) {
+            Debug.WriteLine($"speak{s}");
             var x = await Synthesizer.SynthesizeTextToStreamAsync(s);
             Media.AutoPlay = true;
             Media.SetSource(x, x.ContentType);
