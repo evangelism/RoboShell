@@ -1,5 +1,4 @@
 ﻿RobotName = "Лариса Сергеевна"
-userName = "Астронавт"
 
 
 ($Age in [0,10]) => (AgeCat = "B")
@@ -15,15 +14,16 @@ userName = "Астронавт"
 
 (($Cnct == "True") and (($ArduinoInput == "0100") or ($KeyboardIn == "Key_6"))) => (
     (Answers = "${Tmp}1") and (Cnct = "False") and (clear $KeyboardIn) 
-	and (userAnswer = "True")
-	and (GPIO 100 0,0,0,0 500) and (stayActive)
+	and (userAnswer = "True") and (stayActive)
 )
 
 (($Cnct == "True") and (($ArduinoInput == "0010") or ($KeyboardIn == "Key_7"))) => (
     (Answers = "${Tmp}0") and (Cnct = "False") and (clear $KeyboardIn) 
-	and (userAnswer = "False")
-	and (GPIO 100 0,0,0,0 500) and (stayActive)
+	and (userAnswer = "False") and (stayActive)
 )
+
+
+($Event == "Ping") => ((GPIO 100 0,1,1,1 1000) and (play 100 "sneeze.wav"))
 
 
 ((($CorrectAnswer == "True") and ($userAnswer == "False")) or (($CorrectAnswer == "False") and ($userAnswer == "True"))) => (
@@ -40,7 +40,7 @@ userName = "Астронавт"
 
 ($Event == "Key_2") => ((GPIO 100 1,1,1,0 10000) and (stayActive) and (clear $Event))
 
-($Event == "FaceIn") => ((say "Хьюстон, Хьюстон, как слышите меня, прием? Это ваш первый сеанс связи с подушкой. Поехали!") and (Stage = "Dance") and (clear $Event))
+($Event == "FaceIn") => ((GPIO 100 1,0,1,0 10000) and (say "{Хьюстон, Хьюстон, как слышите меня, прием?| Это ваш первый сеанс связи с подушкой. Поехали!}") and (Stage = "startConversation") and (clear $Event))
 
 (($Event == "FaceIn") and ($FaceCount > 1)) => (
 	(say "отойдите лишние люди! оставьте одного, того, кто осмелится полететь со мной в космос!") and 
@@ -56,7 +56,8 @@ userName = "Астронавт"
 )
 
 (($Event == "FaceRecognized") and ($Stage == "startConversation") and ($isPlaying != "True"))=> (
-	((say "Человек! то, что ты {${Emotion}:happiness=весёлый|не весёлый} -- это нормально для твоей расы.") or (say "Приветствую тебя, ${userName}! ")) and 
+	((GPIO 100 1,1,1,0 4000) or (GPIO 100 0,0,0,1 4000)) and
+	(userName = "{${Gender}:M=Астронавт|F=Астронавтка}") and ((say "Человек! то, что ты {${Emotion}:happiness=весёлый -- это нормально|не весёлый -- это нормально} для {твоей расы|твоего вида|твоей планеты}.") or (say "Приветствую тебя, ${userName}! ")) and 
 	(Stage = "aboutMe1")
 )
 
@@ -66,6 +67,7 @@ userName = "Астронавт"
 )
 
 (($Stage == "aboutMe2") and ($isPlaying != "True")) => (
+	(GPIO 100 1,1,0,0 3000) and
 	(say "{Умею танцевать, ремонтировать двигатель космического корабля, проверять твои знания, осуществлять общее руководство полетом.|Я прилетела с необычной планеты, где президент Илон Маск.|Я самая уникальная робо-подушка во вселенной, буду помогать тебе в полете.}") 
 	and ((Stage = "meaninglessQuestion1") or ((Stage = "meaninglessQuestion2") or (Stage = "meaninglessQuestion3")))
 )
@@ -75,11 +77,24 @@ userName = "Астронавт"
 
 
 (($Stage == "preQuizQuestion") and ($isPlaying != "True")) => ((say "А сейчас я тебя протестирую, готов ли ты отправиться со мной в открытый космос. Напряги все имеющиеся извилины и ответь на несколько важных вопросов моей космической викторины. Ты готов?") 
+	and (Stage = "preQuizResponseWait")
+)
+
+(($Stage == "preQuizResponseWait") and (($ArduinoInput == "0100") or ($Event == "Key_6") )) => (
+	(GPIO 100 0,0,0,0 500)
+	and (clear $Event)
 	and (Stage = "preQuizResponse")
 )
 
+(($Stage == "preQuizResponseWait") and (($ArduinoInput == "0010") or ($Event == "Key_7") )) => (
+	(GPIO 100 0,0,0,0 500)
+	and (clear $Event)
+	and (Stage = "preDance")
+)
+
+
 (($Stage == "preQuizResponse") and ($isPlaying != "True")) => (
-	(say "Оставшись передо мной ты согласился") 
+	(say "ты согласился") 
 	and (Stage = "quiz")
 )
 
@@ -156,8 +171,14 @@ userName = "Астронавт"
 )
 
 
+(($Stage == "preDance") and ($isPlaying != "True")) => (
+	(say "тогда давай танцевать!") 
+	and (Stage = "Dance")
+)
+
+
 (($Stage == "Dance") and ($isPlaying != "True")) => (
-	(play 100 "song.mp3" 60000) and (GPIO 100 0,1,1,0 10000)
+	 (GPIO 100 0,1,1,0 20000) and ((play 100 "song.mp3" 20000) or (play 100 "rr.mp3" 20000))
 )
 
 
@@ -169,7 +190,7 @@ userName = "Астронавт"
 
 
 (($Stage == "meaninglessQuestion1") and ($isPlaying != "True")) => (
-	(say "Это твой первый полет в космос? ") 
+	(say "Это твой первый полет в космос или ты бывалый? ") 
 	and (GPIO 100 1,0,1,1 10000)
 	and (Stage = "meaninglessResponseWait1")
 )
@@ -218,7 +239,7 @@ userName = "Астронавт"
 
 
 (($Stage == "meaninglessQuestion3") and ($isPlaying != "True")) => (
-	(say "C3PO просто красавчик! Ты его тоже любишь? ")
+	(say "C3PO просто красавчик! А ты его тоже любишь? ")
 	and (GPIO 100 1,0,1,1 10000)
 	and (Stage = "meaninglessResponseWait3")
 )
