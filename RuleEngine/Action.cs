@@ -76,12 +76,17 @@ namespace RuleEngineNet {
                                         Action action2 = ParseActionSequence(possibleAction2Substring);
                                         if (action2 != null) {
                                             action = new CombinedAction(new List<Action> {action1});
-                                            if (action2 is CombinedAction action2AsCombinedAction) {
-                                                ((CombinedAction) action).Actions.AddRange(action2AsCombinedAction.Actions);
+                                            if (action2 is OneOf) {
+                                                ((CombinedAction)action).Actions.Add(action2);
+                                            }
+                                            else if (action2 is CombinedAction)
+                                            {
+                                                ((CombinedAction)action).Actions.AddRange(((CombinedAction)action2).Actions);
                                             }
                                             else {
                                                 ((CombinedAction)action).Actions.Add(action2);
                                             }
+                                            
                                         }
                                     }
                                     else if (Regex.IsMatch(restOfString, @"^\s*\)\s*(or|OR).+$")) {
@@ -115,7 +120,7 @@ namespace RuleEngineNet {
         }
 
         private static Action ParseAtomicAction(string actionSequence) {
-            string ASSIGNEMENT_STRING_REGEX = $"^(?<var>{BracketedConfigProcessor.VARNAME_REGEX_PATTERN})\\s*=\\s*\\\"(?<value>\\S*)\\\"$";
+            string ASSIGNEMENT_STRING_REGEX = $"^(?<var>{BracketedConfigProcessor.VARNAME_REGEX_PATTERN})\\s*=\\s*\".*\"$";
             string ASSIGNEMENT_REGEX = $"^(?<var>{BracketedConfigProcessor.VARNAME_REGEX_PATTERN})\\s*=\\s*(?<value>\\S+)$";
             string CLEAR_REGEX = $"^clear\\s+\\$(?<var>{BracketedConfigProcessor.VARNAME_REGEX_PATTERN})$";
             string SAY_REGEX = $"^say\\s+((?<probability>\\d*)\\s+)?\".*\"$";
@@ -133,10 +138,21 @@ namespace RuleEngineNet {
             int probability;
             try {
                 if (Regex.IsMatch(prettyActionSequence, ASSIGNEMENT_STRING_REGEX)) {
+                    int firstQuotePosition = prettyActionSequence.IndexOf("\"");
+                    int lastQuotePosition = prettyActionSequence.LastIndexOf("\"");
+                    int start = firstQuotePosition + 1;
+                    int len = lastQuotePosition - start;
+                    string possibleString = prettyActionSequence.Substring(start, len);
                     Match m = Regex.Match(prettyActionSequence, ASSIGNEMENT_STRING_REGEX);
-                    if (m.Length != 0) {
-                        action = new Assign(m.Groups["var"].Value, m.Groups["value"].Value);
+                    if (BracketedConfigProcessor.AssertValidString(possibleString))
+                    {
+                        if (m.Length != 0)
+                        {
+                            action = new Assign(m.Groups["var"].Value, possibleString);
+                        }
+                        //action = new Say(possibleString, probability);
                     }
+                    
                 }
                 else if (Regex.IsMatch(prettyActionSequence, ASSIGNEMENT_REGEX)) {
                     Match m = Regex.Match(prettyActionSequence, ASSIGNEMENT_REGEX);
