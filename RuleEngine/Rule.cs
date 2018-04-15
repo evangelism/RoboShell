@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -114,37 +115,26 @@ namespace RuleEngineNet
             // TODO check arrow-containing expr or act
             while (true) {
                 int tryingArrowPosition = arrowsPositions[tryingArrowPositionIndex];
-
-                try {
-                    int firstSymbolAfterArrowPosition = tryingArrowPosition + 2;
-                    int possibleActionStringLength =
-                        ruleContainingString.Length - firstSymbolAfterArrowPosition;
-
-                    Expression expr =
-                        Expression.ParseExpressionsSequence(
-                            ruleContainingString.Substring(0, tryingArrowPosition));
-                    Action act = Action.ParseActionSequence(
-                        ruleContainingString.Substring(firstSymbolAfterArrowPosition,
-                            possibleActionStringLength));
+                int firstSymbolAfterArrowPosition = tryingArrowPosition + 2;
+                int possibleActionStringLength = ruleContainingString.Length - firstSymbolAfterArrowPosition;
+                Expression expr = Expression.ParseExpressionsSequence(ruleContainingString.Substring(0, tryingArrowPosition));
+                Action act = Action.ParseActionSequence(ruleContainingString.Substring(firstSymbolAfterArrowPosition, possibleActionStringLength));
+                if (expr != null && act != null) {
                     rule = new Rule(expr, act);
                     if (rule_set != null) {
                         rule.RuleSet = rule_set;
                     }
-
                     if (priority != null) {
                         rule.Priority = Int32.Parse(priority);
                     }
 
-//                    Console.WriteLine($"PARSED: {oldRuleContainingString}");
                     return rule;
                 }
-                catch {
+                else {
                     tryingArrowPositionIndex++;
-                    continue;
-                }
+                }               
             }
 
-            throw new RuleParseException();
         }
     }
 }

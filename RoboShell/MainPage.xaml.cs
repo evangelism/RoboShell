@@ -22,7 +22,11 @@ using Windows.UI.Xaml.Media;
 using Windows.System;
 using Microsoft.ProjectOxford.Emotion.Contract;
 using RoboShell.LED;
+using System.Net.Http;
+using System.Text;
+using System.Net;
 using Windows.Devices.Gpio;
+using System.Collections.Generic;
 
 // Это приложение получает ваше изображение с веб-камеры и
 // распознаёт эмоции на нём, обращаясь к Cognitive Services
@@ -44,44 +48,39 @@ namespace RoboShell
         DispatcherTimer FaceWaitTimer = new DispatcherTimer() { Interval = TimeSpan.FromSeconds(2) };
         DispatcherTimer DropoutTimer = new DispatcherTimer() { Interval = TimeSpan.FromSeconds(3) };
         DispatcherTimer InferenceTimer = new DispatcherTimer() { Interval = TimeSpan.FromSeconds(1) };
-        
+        DispatcherTimer GpioTimer = new DispatcherTimer() { Interval = TimeSpan.FromMilliseconds(500) };
+        DispatcherTimer ArduinoInputTimer = new DispatcherTimer() { Interval = TimeSpan.FromMilliseconds(500) };
 
-        EmotionServiceClient EmoAPI = new EmotionServiceClient(Config.EmotionAPIKey,Config.EmotionAPIEndpoint);
-        FaceServiceClient FaceAPI = new FaceServiceClient(Config.FaceAPIKey,Config.FaceAPIEndpoint);
+        //EmotionServiceClient EmoAPI = new EmotionServiceClient(Config.EmotionAPIKey,Config.EmotionAPIEndpoint);
+        //FaceServiceClient FaceAPI = new FaceServiceClient(Config.FaceAPIKey,Config.FaceAPIEndpoint);
 
+        private static HttpClient httpClient = new HttpClient();
 
         FaceDetectionEffect FaceDetector;
         VideoEncodingProperties VideoProps;
 
         LEDManager LEDMgr;
 
-        private const int GB_PIN = 5; //good-green
-        private const int RB_PIN = 6; //bad-red
-        private const int YB_PIN = 26;//neutral-yellow
-        private GpioPin greenButton;
-        private GpioPin redButton;
-        private GpioPin yellowButton;
-        DispatcherTimer GpioTimer = new DispatcherTimer() { Interval = TimeSpan.FromMilliseconds(500) };
-        private GpioPinValue greenButtonValue;
+        private GpioPin[] ArduinoPins;
+        private readonly int[] ArduinoPinsNumbers = Config.InputPinsNumbers; //must change
 
-        private GpioPinValue redButtonValue;
-        private GpioPinValue yellowButtonValue;
-        // maybe we could use lists?
+        GpioController gpio;
+
         private void InitGpio()
         {
-            var gpio = GpioController.GetDefault();
-
+            gpio = GpioController.GetDefault();
+            ArduinoPins = new GpioPin[ArduinoPinsNumbers.Length];
             if (gpio == null)
             {
                 return;
             }
-            greenButton = gpio.OpenPin(GB_PIN);
-            redButton = gpio.OpenPin(RB_PIN);
-            yellowButton = gpio.OpenPin(YB_PIN);
 
-            greenButton.SetDriveMode(GpioPinDriveMode.Input);
-            redButton.SetDriveMode(GpioPinDriveMode.Input);
-            yellowButton.SetDriveMode(GpioPinDriveMode.Input);
+            for(int i = 0; i < ArduinoPinsNumbers.Length; i++)
+            {
+                ArduinoPins[i] = gpio.OpenPin(ArduinoPinsNumbers[i]);
+                ArduinoPins[i].SetDriveMode(GpioPinDriveMode.Input);
+            }
+
             Trace($"Gpio initialized correctly.");
 
         }
@@ -115,20 +114,20 @@ namespace RoboShell
             base.OnNavigatedTo(e);
             var spk = new UWPLocalSpeaker(media,Windows.Media.SpeechSynthesis.VoiceGender.Female);
             Trace("Loading knowlegdebase");
-//            var xdoc = XDocument.Load("Robot.kb.xml");
-//            RE = XMLRuleEngine.LoadXml(xdoc);
-            var filename = "Robot.kb.brc";
-            RE = BracketedRuleEngine.LoadBracketedKb(filename);
+            //var xdoc = XDocument.Load("Robot.kb.xml");
+            //RE = XMLRuleEngine.LoadXml(xdoc);
+            RE = BracketedRuleEngine.LoadBracketedKb(Config.KBFileName);
             RE.SetSpeaker(spk);
             RE.SetExecutor(ExExecutor);
             FaceWaitTimer.Tick += StartDialog;
             DropoutTimer.Tick += FaceDropout;
             InferenceTimer.Tick += InferenceStep;
-
-            GpioTimer.Tick += ButtonPressed;
             InitGpio();
-            GpioTimer.Start();
-
+            if (gpio != null)
+            {
+                ArduinoInputTimer.Tick += ArduinoInput;
+                ArduinoInputTimer.Start();
+            }
             media.MediaEnded += EndSpeech;
             CoreWindow.GetForCurrentThread().KeyDown += KeyPressed;
             await Init();
@@ -178,33 +177,25 @@ namespace RoboShell
             }
         }
 
-        private void ButtonPressed(object sender, object e)
+        private void ArduinoInput(object sender, object e)
         {
-            yellowButtonValue = yellowButton.Read();
-            greenButtonValue = greenButton.Read();
-            redButtonValue = redButton.Read();
-            //if (redButtonValue == GpioPinValue.Low)
-            //{
-            //    var st = "Red_button";
-            //    Trace($"Initiating event {st}");
-            //    RE.SetVar("Event", st);
-            //    RE.Step();
-            //}
-            //else if (yellowButtonValue == GpioPinValue.Low)
-            //{
-            //    var st = "Yellow_button";
-            //    Trace($"Initiating event {st}");
-            //    RE.SetVar("Event", st);
-            //    RE.Step();
-            //}
-            /*else*/ if (greenButtonValue == GpioPinValue.Low)
+            string input = "";
+            for (int i = 0; i < ArduinoPinsNumbers.Length; ++i)
             {
-                var st = "Green_button";
-                Trace($"Initiating event {st}");
-                RE.SetVar("Event", st);
-                RE.Step();
+                if (ArduinoPins[i].Read() == GpioPinValue.High)
+                {
+                    input += "1";
+                } else
+                {
+                    input += "0";
+                }
             }
+            if (input != "0000") {
+                Trace($"Received: {input}");
+            }
+            RE.SetVar("ArduinoInput", input);
         }
+
         private void KeyPressed(CoreWindow sender, KeyEventArgs args)
         {
             if (args.VirtualKey >= VirtualKey.Number0 &&
@@ -352,60 +343,87 @@ namespace RoboShell
             }
         }
 
-        async Task<bool> RecognizeFace()
-        { 
-            if (!IsFacePresent) return false;
-            FaceWaitTimer.Stop(); 
-            var ms = new MemoryStream();
-            await MC.CapturePhotoToStreamAsync(ImageEncodingProperties.CreateJpeg(), ms.AsRandomAccessStream());
-
-            ms.Position = 0L;
-            var Fce = await FaceAPI.DetectAsync(ms.NewStream(),false,false,new FaceAttributeType[] { FaceAttributeType.Age, FaceAttributeType.Gender });
-
-            Emotion[] Emo = null;
-
-            if (Config.RecognizeEmotions)
-            {
-                ms.Position = 0L;
-                Emo = await EmoAPI.RecognizeAsync(ms.NewStream());
+        async Task<bool> RecognizeFace() {
+            if (!IsFacePresent) {
+                return false;
             }
+            Trace("RecognizeFace() started");
+            FaceWaitTimer.Stop();
 
-            if (Fce != null && Fce.Length > 0)
-            {
-                int males = 0, females = 0, count = 0;
-                double sumage = 0;
-                foreach(var f in Fce)
-                {
-                    if (f.FaceAttributes.Gender == "male") males++; else females++;
-                    count++;
-                    sumage += f.FaceAttributes.Age++;
+            var photoAsStream = new MemoryStream();
+            await MC.CapturePhotoToStreamAsync(ImageEncodingProperties.CreateJpeg(), photoAsStream.AsRandomAccessStream());
+
+            byte[] photoAsByteArray = photoAsStream.ToArray();
+
+            Trace("BEFORE ProcessPhotoAsync()");
+            PhotoInfoDTO photoInfo = await ProcessPhotoAsync(photoAsByteArray, Config.RecognizeEmotions);
+            Trace("AFTER ProcessPhotoAsync()");
+
+            if (photoInfo.FoundAndProcessedFaces) {
+                RE.SetVar("FaceCount", photoInfo.FaceCountAsString);
+                RE.SetVar("Gender", photoInfo.Gender);
+                RE.SetVar("Age", photoInfo.Age);
+                if (Config.RecognizeEmotions) {
+                    RE.SetVar("Emotion", photoInfo.Emotion);
                 }
-                RE.SetVar("FaceCount", count.ToString());
-                if (males == 0 && females > 0) RE.SetVar("Gender", "F");
-                if (males > 0 && females == 0) RE.SetVar("Gender", "M");
-                if (males > 0 && females > 0) RE.SetVar("Gender", males > females ? "MF" : "FM");
-                RE.SetVar("Age", ((int)(sumage / count)).ToString());
-                if (Config.RecognizeEmotions)
-                {
-                    var em = Emo.Select(x=>x.Scores).AvEmotions().MainEmotion();
-                    RE.SetVar("Emotion", em.Item1);
-                }
+
                 Trace($"Face data: #faces={RE.State.Eval("FaceCount")}, age={RE.State.Eval("Age")}, gender={RE.State.Eval("Gender")}, emo={RE.State.Eval("Emotion")}");
+                Trace("RecognizeFace() finished");
                 return true;
             }
-            else
-            {
+            else {
                 FaceWaitTimer.Start();
+                Trace("RecognizeFace() finished");
                 return false;
             }
         }
 
-        private void MainPage_Unloaded(object sender, object args)
-        {
-            yellowButton.Dispose();
-            greenButton.Dispose();
-            redButton.Dispose();
+
+        async Task<PhotoInfoDTO> ProcessPhotoAsync(byte[] photoAsByteArray, bool recognizeEmotions) {
+            PhotoToProcessDTO photoToProcessDTO = new PhotoToProcessDTO {
+                PhotoAsByteArray = photoAsByteArray,
+                RecognizeEmotions = recognizeEmotions
+            };
+            var json = JsonConvert.SerializeObject(photoToProcessDTO);
+
+            PhotoInfoDTO photoInfoDTO;
+
+            using (StringContent content = new StringContent(json.ToString(), Encoding.UTF8, "application/json")){
+                try {
+                    HttpResponseMessage response = await httpClient.PostAsync(Config.CognitiveEndpoint, content);
+                    if (response.StatusCode.Equals(HttpStatusCode.OK)) {
+                        photoInfoDTO = JsonConvert.DeserializeObject<PhotoInfoDTO>(await response.Content.ReadAsStringAsync());
+                    }
+                    else {
+                        Trace("No faces found and analyzed");
+                        photoInfoDTO = new PhotoInfoDTO {
+                            FoundAndProcessedFaces = false
+                        };
+                    }
+                } catch (Exception e) {
+                    Trace("Error! Exception message: " + e.Message);
+                    photoInfoDTO = new PhotoInfoDTO {
+                        FoundAndProcessedFaces = false
+                    };
+                }
+                
+            }
+           
+            return photoInfoDTO;
         }
+    }
+
+    class PhotoToProcessDTO {
+        public byte[] PhotoAsByteArray { get; set; }
+        public bool RecognizeEmotions { get; set; }
+    }
+
+    class PhotoInfoDTO {
+        public string FaceCountAsString { get; set; }
+        public string Gender { get; set; }
+        public string Age { get; set; }
+        public string Emotion { get; set; }
+        public bool FoundAndProcessedFaces { get; set; }
     }
 }
 
