@@ -5,6 +5,19 @@
 ($Age in [19,50]) => (AgeCat = "A")
 ($Age in [51,999]) => (AgeCat = "O")
 
+($Event == "FaceRecognized and $AgeCat == "Y"  and $Gender == "M") => ((Name = "Молодой Астронавт") or (Name = "Нестарый Астронавт"))
+($Event == "FaceRecognized and $AgeCat == "Y"  and $Gender == "F") => ((Name = "Молодая Астронавтка") or (Name = "Нестарая Астронавтка"))
+($Event == "FaceRecognized and $AgeCat == "O"  and $Gender == "M") => ((Name = "Немолодой Астронавт") or (Name = "Старый Астронавт"))
+($Event == "FaceRecognized and $AgeCat == "O"  and $Gender == "F") => ((Name = "Немолодая Астронавтка") or (Name = "Старая Астронавтка"))
+($Event == "FaceRecognized" and $AgeCat == "Y" and $Gender == "M" and $Emotion == "Happiness") => ((Name = "Молодой Астронавт Довольный"))
+($Event == "FaceRecognized" and $AgeCat == "Y" and $Gender == "M" and $Emotion == "Sadness") =>   ((Name = "Молодой Астронавт Недовольный"))
+($Event == "FaceRecognized" and $AgeCat == "Y" and $Gender == "F" and $Emotion == "Happiness") => ((Name = "Молодая Астронавтка Довольная"))
+($Event == "FaceRecognized" and $AgeCat == "Y" and $Gender == "F" and $Emotion == "Sadness") =>   ((Name = "Молодая Астронавтка Недовольная"))
+($Event == "FaceRecognized" and $AgeCat == "O" and $Gender == "M" and $Emotion == "Happiness") => ((Name = "Старый Астронавт Довольный"))
+($Event == "FaceRecognized" and $AgeCat == "O" and $Gender == "M" and $Emotion == "Sadness") =>   ((Name = "Старый Астронавт Недовольный"))
+($Event == "FaceRecognized" and $AgeCat == "O" and $Gender == "F" and $Emotion == "Happiness") => ((Name = "Старая Астронавтка Довольная"))
+($Event == "FaceRecognized" and $AgeCat == "O" and $Gender == "F" and $Emotion == "Sadness") =>   ((Name = "Старая Астронавтка Недовольная"))
+
 ($Event == "FaceOut") => ((clear $Stage) and (say "я больше не вижу твоего лица"))
 
 (($Cnct == "True") and (($Event == "Key_6") or ($Event == "Key_7"))) => (
@@ -76,6 +89,8 @@
 	(userName = "{${Gender}:M=Астронавт|F=Астронавтка}") and ((say "Человек! то, что ты {${Emotion}:happiness=весёлый -- это нормально|не весёлый -- это нормально} для {твоей расы|твоего вида|твоей планеты}.") or (say "Приветствую тебя, ${Name}! ")) and 
 	(Stage = "aboutMe1")
 )
+
+
 
 (($Stage == "aboutMe1") and ($isPlaying != "True")) => (
 	(say "{Если ты думаешь, что я подушка, то ты не ошибаешься.|Меня зовут Лариса Сергеевна, для тебя просто Лариса.|Я самая уникальная робо-подушка во вселенной, буду помогать тебе в полете.}") 
