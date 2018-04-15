@@ -27,6 +27,11 @@ using System.Text;
 using System.Net;
 using Windows.Devices.Gpio;
 using System.Collections.Generic;
+using System.Diagnostics;
+using Windows.Storage;
+using Microsoft.Extensions.Logging;
+using Serilog;
+using Serilog.Core;
 
 // Это приложение получает ваше изображение с веб-камеры и
 // распознаёт эмоции на нём, обращаясь к Cognitive Services
@@ -46,7 +51,7 @@ namespace RoboShell
         MediaCapture MC;
 
         DispatcherTimer FaceWaitTimer = new DispatcherTimer() { Interval = TimeSpan.FromSeconds(2) };
-        DispatcherTimer DropoutTimer = new DispatcherTimer() { Interval = TimeSpan.FromSeconds(3) };
+        DispatcherTimer DropoutTimer = new DispatcherTimer() { Interval = TimeSpan.FromSeconds(7) };
         DispatcherTimer InferenceTimer = new DispatcherTimer() { Interval = TimeSpan.FromSeconds(1) };
         DispatcherTimer GpioTimer = new DispatcherTimer() { Interval = TimeSpan.FromMilliseconds(500) };
         DispatcherTimer ArduinoInputTimer = new DispatcherTimer() { Interval = TimeSpan.FromMilliseconds(500) };
@@ -63,7 +68,7 @@ namespace RoboShell
 
         private GpioPin[] ArduinoPins;
         private readonly int[] ArduinoPinsNumbers = Config.InputPinsNumbers; //must change
-
+        readonly Logger logger; // logger
         GpioController gpio;
 
         private void InitGpio()
@@ -95,6 +100,7 @@ namespace RoboShell
 
         public MainPage()
         {
+            logger = new LoggerConfiguration().WriteTo.File($"{ApplicationData.Current.LocalFolder.Path}\\Logs\\App.log").CreateLogger(); // logger
             this.InitializeComponent();
         }
 
@@ -141,6 +147,8 @@ namespace RoboShell
                 LEDMgr.LEDS["RE"].Load(new LEDImage("eye_blink"));
                 LEDMgr.LEDS["M"].Load(new LEDImage("mouth_neutral"));
             }
+            InferenceTimer.Start();
+            logger.Information("Test"); // logger
         }
 
         private async void EndSpeech(object sender, RoutedEventArgs e)
@@ -204,7 +212,7 @@ namespace RoboShell
                 var st = $"Key_{args.VirtualKey - VirtualKey.Number0}";
                 Trace($"Initiating event {st}");
                 RE.SetVar("Event", st);
-                RE.Step();
+//                RE.Step();
             }
             // S = print state
             if (args.VirtualKey == VirtualKey.S)
@@ -269,7 +277,8 @@ namespace RoboShell
         /// </summary>
         private async void FaceDetectedEvent(FaceDetectionEffect sender, FaceDetectedEventArgs args)
         {
-            await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => HighlightDetectedFace(args.ResultFrame.DetectedFaces.FirstOrDefault()));
+            await HighlightDetectedFaces(args.ResultFrame.DetectedFaces);
+//            await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => HighlightDetectedFace(args.ResultFrame.DetectedFaces.FirstOrDefault()));
         }
 
         /// <summary>
@@ -314,6 +323,35 @@ namespace RoboShell
             }
         }
 
+        private async Task HighlightDetectedFaces(IReadOnlyList<DetectedFace> faces) {
+            var tmp = (from face in faces orderby face.FaceBox.Width*face.FaceBox.Height descending select face).ToList();
+            
+            if (tmp.Any() && tmp[0].FaceBox.Width * tmp[0].FaceBox.Height > VideoProps.Width*VideoProps.Height*Config.biggestFaceRelativeSize){
+                var biggest = tmp[0];
+                int facesCnt = 1;
+                for (; facesCnt < tmp.Count; facesCnt++) {
+                    if (faces[facesCnt].FaceBox.Height * faces[facesCnt].FaceBox.Width * Config.facesRelation < biggest.FaceBox.Height * biggest.FaceBox.Width) {
+                        break;
+                    }
+                }
+                RE.SetVar("FaceCount", facesCnt.ToString());
+                if (Config.analyzeOnlyOneFace) {
+                    if (facesCnt == 1) {
+                        await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => HighlightDetectedFace(biggest));
+                    }
+                    else {
+                        await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => HighlightDetectedFace(null));
+                    }
+                }
+                else {
+                    await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => HighlightDetectedFace(biggest));
+                }
+            }
+            else {
+                await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => HighlightDetectedFace(null));
+            }
+        }
+
         void FaceDropout(object sender, object e)
         {
             DropoutTimer.Stop();
@@ -331,15 +369,17 @@ namespace RoboShell
         async void StartDialog(object sender, object e)
         {
             if (!IsFacePresent) return;
+            RE.SetVar("Event", "FaceIn");
+            RE.Step();
             InDialog = true;
             Trace("Calling face recognition");
             var res = await RecognizeFace();
             if (res)
             {
-                Trace("Initiating FaceIn Event");
-                RE.SetVar("Event", "FaceIn");
+                Trace("Initiating FaceRecognized Event");
+                RE.SetVar("Event", "FaceRecognized");
                 RE.Step();
-                InferenceTimer.Start();
+                if (! InferenceTimer.IsEnabled) InferenceTimer.Start(); //TODO check
             }
         }
 
@@ -347,18 +387,20 @@ namespace RoboShell
             if (!IsFacePresent) {
                 return false;
             }
+            var startTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
             Trace("RecognizeFace() started");
             FaceWaitTimer.Stop();
-
             var photoAsStream = new MemoryStream();
             await MC.CapturePhotoToStreamAsync(ImageEncodingProperties.CreateJpeg(), photoAsStream.AsRandomAccessStream());
 
             byte[] photoAsByteArray = photoAsStream.ToArray();
 
+            var startTime2 = DateTimeOffset.Now.ToUnixTimeMilliseconds();
             Trace("BEFORE ProcessPhotoAsync()");
             PhotoInfoDTO photoInfo = await ProcessPhotoAsync(photoAsByteArray, Config.RecognizeEmotions);
             Trace("AFTER ProcessPhotoAsync()");
-
+            var endTime2 = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+            var res2 = endTime2 - startTime2;
             if (photoInfo.FoundAndProcessedFaces) {
                 RE.SetVar("FaceCount", photoInfo.FaceCountAsString);
                 RE.SetVar("Gender", photoInfo.Gender);
@@ -366,14 +408,17 @@ namespace RoboShell
                 if (Config.RecognizeEmotions) {
                     RE.SetVar("Emotion", photoInfo.Emotion);
                 }
-
+                var endTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+                var res = endTime - startTime;
                 Trace($"Face data: #faces={RE.State.Eval("FaceCount")}, age={RE.State.Eval("Age")}, gender={RE.State.Eval("Gender")}, emo={RE.State.Eval("Emotion")}");
-                Trace("RecognizeFace() finished");
+                Trace($"RecognizeFace() finished. Took {res} millis, {res2} in the cloud");
                 return true;
             }
             else {
                 FaceWaitTimer.Start();
-                Trace("RecognizeFace() finished");
+                var endTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+                var res = endTime - startTime;
+                Trace($"RecognizeFace() finished. Took {res} millis, {res2} in the cloud");
                 return false;
             }
         }
@@ -390,7 +435,11 @@ namespace RoboShell
 
             using (StringContent content = new StringContent(json.ToString(), Encoding.UTF8, "application/json")){
                 try {
+                    var t1 = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+                    Debug.WriteLine("Before sent to network");
                     HttpResponseMessage response = await httpClient.PostAsync(Config.CognitiveEndpoint, content);
+                    var res = DateTimeOffset.Now.ToUnixTimeMilliseconds() - t1;
+                    Debug.WriteLine($"After sent to network {res}");
                     if (response.StatusCode.Equals(HttpStatusCode.OK)) {
                         photoInfoDTO = JsonConvert.DeserializeObject<PhotoInfoDTO>(await response.Content.ReadAsStringAsync());
                     }

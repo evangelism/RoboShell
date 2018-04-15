@@ -1,4 +1,4 @@
-($Event == "FaceIn") => ((say "начинаю викторину") and (State = "Question_1") and (clear $Event))
+($Event == "FaceRecognized") => ((say "начинаю викторину") and (State = "Question_1") and (clear $Event))
 
 ($Wait == "True") => ((ext:Wait "10000") and (clear $Wait))
 

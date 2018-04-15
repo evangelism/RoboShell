@@ -29,7 +29,7 @@ namespace RuleEngineNet
         {
             if (!this.ContainsKey(x))
             {
-                System.Diagnostics.Debug.WriteLine($"Var {x} not found");
+//                System.Diagnostics.Debug.WriteLine($"Var {x} not found");
                 return null;
             }
             return this[x];

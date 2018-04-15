@@ -36,9 +36,9 @@ namespace RuleEngineNet
             this.InitialState = S;
         }
 
-        public void SetSpeaker(ISpeaker spk)
+        public void SetSpeaker(UWPLocalSpeaker spk)
         {
-            Say.Speaker = spk;
+            Say.Speaker = (UWPLocalSpeaker) spk;
             Play.Speaker = spk;
             ShutUp.Speaker = spk;
         }
@@ -79,10 +79,16 @@ namespace RuleEngineNet
                 var rule = ResolveConflict(cs);
                 LastActionLongRunning = rule.Then.LongRunning;
                 rule.Then.Execute(State);
-                if (rule.RuleSet==null) rule.Active = true;
+                if (rule.Then.ActiveAfterExecution)
+                {
+                    rule.Active = true;
+                    rule.Then.ActiveAfterExecution = false;
+                }
+                else rule.Active = false;
                 return true;
             }
-            else return false;
+            return false;
+
         }
 
         public bool StepUntilLongRunning()
@@ -143,6 +149,8 @@ namespace RuleEngineNet
             foreach (var v in t) {
                 S.Add(v.Attribute("Name").Value, v.Attribute("Value").Value);
             }
+
+            S["isPlaying"] = "False";
             return new RuleEngine(KB, S);
         }
     }
@@ -159,6 +167,8 @@ namespace RuleEngineNet
             Task.WaitAll(t);
 
             State initialState = kbContent.Item1;
+            initialState["isPlaying"] = "False";
+
 
             List<Rule> rules = kbContent.Item2;
 
