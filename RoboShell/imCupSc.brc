@@ -5,18 +5,7 @@
 ($Age in [19,50]) => (AgeCat = "A")
 ($Age in [51,999]) => (AgeCat = "O")
 
-($Event == "FaceRecognized and $AgeCat == "Y"  and $Gender == "M") => ((Name = "Молодой Астронавт") or (Name = "Нестарый Астронавт"))
-($Event == "FaceRecognized and $AgeCat == "Y"  and $Gender == "F") => ((Name = "Молодая Астронавтка") or (Name = "Нестарая Астронавтка"))
-($Event == "FaceRecognized and $AgeCat == "O"  and $Gender == "M") => ((Name = "Немолодой Астронавт") or (Name = "Старый Астронавт"))
-($Event == "FaceRecognized and $AgeCat == "O"  and $Gender == "F") => ((Name = "Немолодая Астронавтка") or (Name = "Старая Астронавтка"))
-($Event == "FaceRecognized" and $AgeCat == "Y" and $Gender == "M" and $Emotion == "Happiness") => ((Name = "Молодой Астронавт Довольный"))
-($Event == "FaceRecognized" and $AgeCat == "Y" and $Gender == "M" and $Emotion == "Sadness") =>   ((Name = "Молодой Астронавт Недовольный"))
-($Event == "FaceRecognized" and $AgeCat == "Y" and $Gender == "F" and $Emotion == "Happiness") => ((Name = "Молодая Астронавтка Довольная"))
-($Event == "FaceRecognized" and $AgeCat == "Y" and $Gender == "F" and $Emotion == "Sadness") =>   ((Name = "Молодая Астронавтка Недовольная"))
-($Event == "FaceRecognized" and $AgeCat == "O" and $Gender == "M" and $Emotion == "Happiness") => ((Name = "Старый Астронавт Довольный"))
-($Event == "FaceRecognized" and $AgeCat == "O" and $Gender == "M" and $Emotion == "Sadness") =>   ((Name = "Старый Астронавт Недовольный"))
-($Event == "FaceRecognized" and $AgeCat == "O" and $Gender == "F" and $Emotion == "Happiness") => ((Name = "Старая Астронавтка Довольная"))
-($Event == "FaceRecognized" and $AgeCat == "O" and $Gender == "F" and $Emotion == "Sadness") =>   ((Name = "Старая Астронавтка Недовольная"))
+
 
 ($Event == "FaceOut") => ((clear $Stage) and (say "я больше не вижу твоего лица"))
 
