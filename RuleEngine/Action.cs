@@ -1,5 +1,6 @@
 ﻿using RoboLogic;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -9,21 +10,52 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 using Windows.Devices.Gpio;
+using Windows.Media.SpeechSynthesis;
 using Windows.Storage;
+using Windows.Storage.Streams;
 using Windows.UI.Core;
 using Windows.UI.Xaml.Media;
 using RuleEngineNet;
+using RuleEngineUtils;
 
 // ReSharper disable StringLastIndexOfIsCultureSpecific.1
 
 // ReSharper disable StringIndexOfIsCultureSpecific.1
+
+namespace RuleEngineUtils {
+    public static class DispatcherTaskExtensions
+    {
+        public static async Task<T> RunTaskAsync<T>(this CoreDispatcher dispatcher,
+            Func<Task<T>> func, CoreDispatcherPriority priority = CoreDispatcherPriority.Normal)
+        {
+            var taskCompletionSource = new TaskCompletionSource<T>();
+            await dispatcher.RunAsync(priority, async () =>
+            {
+                try
+                {
+                    taskCompletionSource.SetResult(await func());
+                }
+                catch (Exception ex)
+                {
+                    taskCompletionSource.SetException(ex);
+                }
+            });
+            return await taskCompletionSource.Task;
+        }
+
+        // There is no TaskCompletionSource<void> so we use a bool that we throw away.
+        public static async Task RunTaskAsync(this CoreDispatcher dispatcher,
+            Func<Task> func, CoreDispatcherPriority priority = CoreDispatcherPriority.Normal) =>
+            await RunTaskAsync(dispatcher, async () => { await func(); return false; }, priority);
+    }
+}
 
 namespace RuleEngineNet {
     public abstract class Action {
         public abstract void Execute(State S);
         public bool ActiveAfterExecution { get; set; } = false;
         public virtual bool LongRunning { get; } = false;
-        public static Action LoadXml(XElement X) {
+        public static Action LoadXml(XElement X) { // TODO add new actions
             switch (X.Name.LocalName) {
                 case "Assign":
                     return Assign.Parse(X);
@@ -46,6 +78,7 @@ namespace RuleEngineNet {
             }
         }
 
+        public abstract void Initialize();
         public static Action ParseActionSequence(string actionsSequence) {
             // ReSharper disable once RedundantAssignment
             Action action = null;
@@ -128,10 +161,10 @@ namespace RuleEngineNet {
             string GPIO_REGEX = $"^GPIO\\s+((?<probability>\\d*)\\s+)?(?<signal>([10],)*[10])\\s+(?<time>\\d+)$";
             string EXTERNAL_ACTION_NAME_REGEX_PATTERN = BracketedConfigProcessor.VARNAME_REGEX_PATTERN;
             string EXTERNAL_REGEX = $"^ext:(?<method>{EXTERNAL_ACTION_NAME_REGEX_PATTERN})\\s+\".*\"$";
-            string PLAY_REGEX = $"^play\\s+((?<probability>\\d*)\\s+)?\".*\"$";
             string PLAY_DELAY_REGEX = $"^play\\s+((?<probability>\\d*)\\s+)?\".*\"(\\s+(?<time>\\d+))?$";
             string STAY_ACTIVE_REGEX = $"^stayActive$";
             string COMPARE_ANSWERS_REGEX = $"^compareAnswers\\s+(?<goodAnswer>{BracketedConfigProcessor.VARNAME_REGEX_PATTERN})\\s+(?<realAnswer>{BracketedConfigProcessor.VARNAME_REGEX_PATTERN})$";
+            string QUIZ_REGEX = $"^\\s*quiz\\s+(\\\"(?<filename>.*)\\\"\\s*)((?<randomOrder>randomOrder)\\s*)?((?<length>\\d+\\:\\d+))?\\s*$";
             Action action = null;
 
             string prettyActionSequence = actionSequence.Trim();
@@ -150,7 +183,6 @@ namespace RuleEngineNet {
                         {
                             action = new Assign(m.Groups["var"].Value, possibleString);
                         }
-                        //action = new Say(possibleString, probability);
                     }
                     
                 }
@@ -231,6 +263,34 @@ namespace RuleEngineNet {
                             action = new Play(possibleString, probability);
                         }
                     }
+                }
+                else if (Regex.IsMatch(prettyActionSequence, QUIZ_REGEX)) {
+                    int firstQuotePosition = prettyActionSequence.IndexOf("\"");
+                    int lastQuotePosition = prettyActionSequence.LastIndexOf("\"");
+                    int start = firstQuotePosition + 1;
+                    int len = lastQuotePosition - start;
+
+                    string possibleString = prettyActionSequence.Substring(start, len);
+                    if (BracketedConfigProcessor.AssertValidString(possibleString))
+                    {
+                        action = new Quiz(possibleString);
+
+                        Match m = Regex.Match(prettyActionSequence, QUIZ_REGEX);
+
+                        ((Quiz)action).randomOrdered = m.Length != 0 && m.Groups["randomOrder"].Value.Length != 0;
+
+                        //                    Match m = Regex.Match(prettyActionSequence, QUIZ_REGEX);
+                        if (m.Length != 0 && m.Groups["length"].Value.Length != 0)
+                        {
+                            var lengths = m.Groups["length"].Value.Split(':');
+                            ((Quiz) action).randomLength = true;
+                            ((Quiz)action).lengthLowerBound = int.Parse(lengths[0]);
+                            ((Quiz)action).lengthUpperBound = int.Parse(lengths[1]);
+                        }
+                    }
+
+                    
+                    
                     
                 }
                 else if (Regex.IsMatch(prettyActionSequence, GPIO_REGEX))
@@ -288,6 +348,10 @@ namespace RuleEngineNet {
             if (Value != null) S.Assign(Var, S.EvalString(Value));
         }
 
+        public override void Initialize() {
+            return;
+        }
+
         public static Assign Parse(XElement X) {
             return new Assign(X.Attribute("Var").Value, X.Attribute("Value").Value);
         }
@@ -298,6 +362,10 @@ namespace RuleEngineNet {
 
         public Clear(string Var) {
             this.Var = Var;
+        }
+        public override void Initialize()
+        {
+            return;
         }
 
         public override void Execute(State S) {
@@ -325,6 +393,14 @@ namespace RuleEngineNet {
         }
 
         protected bool? long_running;
+
+        public override void Initialize()
+        {
+            foreach (var x in Actions)
+            {
+                x.Initialize();
+            }
+        }
 
         public override bool LongRunning {
             get {
@@ -371,6 +447,7 @@ namespace RuleEngineNet {
             this.Probability = Probability;
         }
 
+        public override void Initialize() {}
         public override bool LongRunning => true;
 
         public override void Execute(State S)
@@ -423,6 +500,9 @@ namespace RuleEngineNet {
             this.realAnswersVarName = realAnswersVarName;
         }
 
+        public override void Initialize() { }
+
+
         public override void Execute(State S)
         {
             if (S.ContainsKey(correctAnswersVarName) && S.ContainsKey(realAnswersVarName)) {
@@ -464,6 +544,9 @@ namespace RuleEngineNet {
             Speaker.ShutUp();
         }
 
+        public override void Initialize() { }
+
+
         public static ShutUp Parse(XElement X) {
             return new ShutUp();
         }
@@ -481,6 +564,8 @@ namespace RuleEngineNet {
             this.FileName = new Uri(WAV_PATH_PREFIX + filename);
             Probability = prob;
         }
+
+        public override void Initialize() { }
 
         public Play(string filename, int prob, int duration) {
             FileName = new Uri(WAV_PATH_PREFIX + filename);
@@ -519,6 +604,8 @@ namespace RuleEngineNet {
         public override void Execute(State S) {
             ActiveAfterExecution = true;
         }
+        public override void Initialize() { }
+
     }
 
     public class Extension : Action
@@ -537,6 +624,9 @@ namespace RuleEngineNet {
             Executor(Command, Param);
         }
 
+        public override void Initialize() { }
+
+
         public static Extension Parse(XElement X) {
             if (X.Attribute("Param") == null) return new Extension(X.Attribute("Command").Value);
             else return new Extension(X.Attribute("Command").Value, X.Attribute("Param").Value);
@@ -554,6 +644,9 @@ namespace RuleEngineNet {
         private Task task = Task.CompletedTask;
         private static Boolean stopExecution = false;
         private static Boolean executing = false;
+
+        public override void Initialize() { }
+
 
         public GPIO(IEnumerable<int> signal, int time, int probability) {
             this.Signal = new List<int>(signal);
@@ -631,29 +724,75 @@ namespace RuleEngineNet {
         }
     }
 
-    public static class DispatcherTaskExtensions
-    {
-        public static async Task<T> RunTaskAsync<T>(this CoreDispatcher dispatcher,
-            Func<Task<T>> func, CoreDispatcherPriority priority = CoreDispatcherPriority.Normal)
+    public class Quiz : Action {
+
+        private string quizCsv = null;
+        public bool randomOrdered = false;
+        public bool randomLength = false;
+        public int lengthLowerBound;
+        public int lengthUpperBound;
+        public static UWPLocalSpeaker Speaker;
+        private IList<Tuple<string, bool>> _quizText = new List<Tuple<string, bool>>();
+        private IList<Tuple<SpeechSynthesisStream, bool>> _quiz = new List<Tuple<SpeechSynthesisStream, bool>>();
+        public Quiz(string quizCsv)
         {
-            var taskCompletionSource = new TaskCompletionSource<T>();
-            await dispatcher.RunAsync(priority, async () =>
-            {
-                try
-                {
-                    taskCompletionSource.SetResult(await func());
-                }
-                catch (Exception ex)
-                {
-                    taskCompletionSource.SetException(ex);
-                }
-            });
-            return await taskCompletionSource.Task;
+            this.quizCsv = quizCsv;
+            var quest1 = "вопрос первый";
+            var answ1 = false;
+            var quest2 = "вопрос второй";
+            var answ2 = false;
+
+            _quizText.Add(new Tuple<string, bool>(quest1, answ1));
+            _quizText.Add(new Tuple<string, bool>(quest2, answ2));
+
+            
+
         }
 
-        // There is no TaskCompletionSource<void> so we use a bool that we throw away.
-        public static async Task RunTaskAsync(this CoreDispatcher dispatcher,
-            Func<Task> func, CoreDispatcherPriority priority = CoreDispatcherPriority.Normal) =>
-            await RunTaskAsync(dispatcher, async () => { await func(); return false; }, priority);
+        public override void Initialize() {
+            SpeechSynthesisStream q1stream = null;
+            SpeechSynthesisStream q2stream = null;
+
+            Task.Run(async () => {
+                for (int i = 0; i < _quizText.Count; i++)
+                {
+                    _quiz.Add(new Tuple<SpeechSynthesisStream, bool>(await Speaker.Synthesizer.SynthesizeTextToStreamAsync(_quizText.ElementAt(i).Item1), _quizText.ElementAt(i).Item2));
+                }
+            }).Wait();
+        }
+
+
+        public override void Execute(State S) {
+            QuizHelper(S);
+        }
+
+        public async void QuizHelper(State S)
+        {
+            for (int i = 0; i < _quiz.Count; i++) {
+                Debug.WriteLine("1");
+                while (Say.isPlaying) {
+                    await Task.Delay(TimeSpan.FromMilliseconds(300));
+                }
+
+                Debug.WriteLine("2");
+                Say.isPlaying = true;
+                S.Assign("isPlaying", "True");
+                Debug.WriteLine("3");
+                await Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunTaskAsync(() =>
+                    Say.Speaker.Speak(_quiz.ElementAt(i).Item1));
+                Debug.WriteLine("4");
+                await Task.Delay(TimeSpan.FromMilliseconds(500));
+                Debug.WriteLine("5");
+                while (Say.Speaker.Media.CurrentState != MediaElementState.Closed &&
+                       Say.Speaker.Media.CurrentState != MediaElementState.Stopped &&
+                       Say.Speaker.Media.CurrentState != MediaElementState.Paused) {
+                    await Task.Delay(TimeSpan.FromMilliseconds(500));
+                }
+
+                Debug.WriteLine("6");
+                Say.isPlaying = false;
+                S.Assign("isPlaying", "False");
+            }
+        }
     }
 }

@@ -41,6 +41,7 @@ namespace RuleEngineNet
             Say.Speaker = (UWPLocalSpeaker) spk;
             Play.Speaker = spk;
             ShutUp.Speaker = spk;
+            Quiz.Speaker = spk;
         }
 
         public void SetExecutor(Action<string,string> Executor)
@@ -135,6 +136,12 @@ namespace RuleEngineNet
         {
             while (Step()) ;
         }
+
+        public void Initialize() {
+            foreach (var x in KnowlegeBase) {
+                x.Then.Initialize();
+            }
+        }
     }
 
     public class XMLRuleEngine : RuleEngine
@@ -147,7 +154,7 @@ namespace RuleEngineNet
             var t = from x in xdoc.Descendants("State").First().Elements()
                 select x;
             foreach (var v in t) {
-                S.Add(v.Attribute("Name").Value, v.Attribute("Value").Value);
+                S.AddOrUpdate(v.Attribute("Name").Value, v.Attribute("Value").Value, (k, oV) => (v.Attribute("Value").Value));
             }
 
             S["isPlaying"] = "False";
@@ -194,7 +201,7 @@ namespace RuleEngineNet
                     try
                     {
                         Tuple<string, string> assignement = ParseVarAssignementLine(line);
-                        S.Add(assignement.Item1, assignement.Item2);
+                        S.AddOrUpdate(assignement.Item1, assignement.Item2, (k, oV)=>(assignement.Item2));
                     }
                     catch (Exception)
                     {

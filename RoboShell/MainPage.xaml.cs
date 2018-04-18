@@ -124,6 +124,7 @@ namespace RoboShell
             //RE = XMLRuleEngine.LoadXml(xdoc);
             RE = BracketedRuleEngine.LoadBracketedKb(Config.KBFileName);
             RE.SetSpeaker(spk);
+            RE.Initialize();
             RE.SetExecutor(ExExecutor);
             FaceWaitTimer.Tick += StartDialog;
             DropoutTimer.Tick += FaceDropout;

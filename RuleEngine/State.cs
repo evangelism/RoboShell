@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -6,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace RuleEngineNet
 {
-    public class State : Dictionary<string,string>, IEvaluator
+    public class State : ConcurrentDictionary<string,string>, IEvaluator
     {
         protected StringProcessor _string_proc;
         protected StringProcessor StringProc
@@ -20,7 +21,7 @@ namespace RuleEngineNet
 
         public State(State S) : base()
         {
-            foreach (var x in S.Keys) this.Add(x, S[x]);
+            foreach (var x in S.Keys) this.TryAdd(x, S[x]);
         }
 
         public State() : base() { }
@@ -40,7 +41,20 @@ namespace RuleEngineNet
         public void Assign(string Var, string Value)
         {
             if (this.ContainsKey(Var)) this[Var] = Value;
-            else this.Add(Var, Value);
+            else this.AddOrUpdate(Var, Value, (key, oldValue) => (Value));
         }
+
+        
+        
+        
+    }
+    public static class ConcurrentDictionaryEx
+    {
+        public static bool Remove<TKey, TValue>(
+            this ConcurrentDictionary<TKey, TValue> self, TKey key)
+        {
+            return ((IDictionary<TKey, TValue>)self).Remove(key);
+        }
+
     }
 }
