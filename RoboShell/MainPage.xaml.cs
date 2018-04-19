@@ -32,7 +32,7 @@ using Windows.Storage;
 using Microsoft.Extensions.Logging;
 using Serilog;
 using Serilog.Core;
-
+using LogLib;
 // Это приложение получает ваше изображение с веб-камеры и
 // распознаёт эмоции на нём, обращаясь к Cognitive Services
 // Предварительно с помощью Windows UWP API анализируется, есть
@@ -68,7 +68,6 @@ namespace RoboShell
 
         private GpioPin[] ArduinoPins;
         private readonly int[] ArduinoPinsNumbers = Config.InputPinsNumbers; //must change
-        readonly Logger logger; // logger
         GpioController gpio;
 
         private void InitGpio()
@@ -86,7 +85,7 @@ namespace RoboShell
                 ArduinoPins[i].SetDriveMode(GpioPinDriveMode.Input);
             }
 
-            Trace($"Gpio initialized correctly.");
+            LogLib.Log.Trace($"Gpio initialized correctly.");
 
         }
 
@@ -100,17 +99,11 @@ namespace RoboShell
 
         public MainPage()
         {
-            logger = new LoggerConfiguration().WriteTo.File($"{ApplicationData.Current.LocalFolder.Path}\\Logs\\App.log").CreateLogger(); // logger
+            LogLib.Log.Trace("Logger was initialized");
+            
             this.InitializeComponent();
         }
 
-        
-
-        public void Trace(string s)
-        {
-            System.Diagnostics.Debug.WriteLine(s);
-            if (!Config.Headless) log.Text += s + "\r\n";
-        }
 
         /// <summary>
         /// Первоначальная инициализация страницы
@@ -119,7 +112,7 @@ namespace RoboShell
         {
             base.OnNavigatedTo(e);
             var spk = new UWPLocalSpeaker(media,Windows.Media.SpeechSynthesis.VoiceGender.Female);
-            Trace("Loading knowlegdebase");
+            LogLib.Log.Trace("Loading knowlegdebase");
             //var xdoc = XDocument.Load("Robot.kb.xml");
             //RE = XMLRuleEngine.LoadXml(xdoc);
             RE = BracketedRuleEngine.LoadBracketedKb(Config.KBFileName);
@@ -149,7 +142,6 @@ namespace RoboShell
                 LEDMgr.LEDS["M"].Load(new LEDImage("mouth_neutral"));
             }
             InferenceTimer.Start();
-            logger.Information("Test"); // logger
         }
 
         private async void EndSpeech(object sender, RoutedEventArgs e)
@@ -200,7 +192,7 @@ namespace RoboShell
                 }
             }
             if (input != "0000") {
-                Trace($"Received: {input}");
+                //                LogLib.Log.Trace($"Received: {input}");
             }
             RE.SetVar("ArduinoInput", input);
         }
@@ -211,7 +203,7 @@ namespace RoboShell
                 args.VirtualKey <= VirtualKey.Number9)
             {
                 var st = $"Key_{args.VirtualKey - VirtualKey.Number0}";
-                Trace($"Initiating event {st}");
+                LogLib.Log.Trace($"Initiating event {st}");
                 RE.SetVar("Event", st);
 //                RE.Step();
             }
@@ -220,7 +212,7 @@ namespace RoboShell
             {
                 foreach(var x in RE.State)
                 {
-                    Trace($" > {x.Key} -> {x.Value}");
+                    LogLib.Log.Trace($" > {x.Key} -> {x.Value}");
                 }
             }
         }
@@ -234,7 +226,7 @@ namespace RoboShell
             if (BoringCounter==0)
             {
                 RE.SetVar("Event", "Ping");
-                Trace("Ping event intiated");
+                LogLib.Log.Trace("Ping event intiated");
                 BoringCounter = Rnd.Next(Config.MinBoringSeconds, Config.MaxBoringSeconds);
             }
             var s = RE.StepUntilLongRunning();
@@ -245,7 +237,7 @@ namespace RoboShell
         /// </summary>
         private async Task Init()
         {
-            Trace("Initializing media...");
+            LogLib.Log.Trace("Initializing media...");
             MC = new MediaCapture();
             var cameras = await DeviceInformation.FindAllAsync(DeviceClass.VideoCapture);
             var camera = cameras.Last();
@@ -265,9 +257,9 @@ namespace RoboShell
             FaceDetector.FaceDetected += FaceDetectedEvent;
             FaceDetector.DesiredDetectionInterval = TimeSpan.FromMilliseconds(100);
             FaceDetector.Enabled = true;
-            Trace("Ready to start face recognition");
+            LogLib.Log.Trace("Ready to start face recognition");
             await MC.StartPreviewAsync();
-            Trace("Face Recognition Started");
+            LogLib.Log.Trace("Face Recognition Started");
             var props = MC.VideoDeviceController.GetMediaStreamProperties(MediaStreamType.VideoPreview);
             VideoProps = props as VideoEncodingProperties;
         }
@@ -358,7 +350,7 @@ namespace RoboShell
             DropoutTimer.Stop();
             InDialog = false;
             BoringCounter = Rnd.Next(Config.MinBoringSeconds, Config.MaxBoringSeconds);
-            Trace("Face dropout initiated");
+            LogLib.Log.Trace("Face dropout initiated");
             InferenceTimer.Stop();
             RE.Reset();
             RE.SetVar("Event", "FaceOut");
@@ -373,11 +365,11 @@ namespace RoboShell
             RE.SetVar("Event", "FaceIn");
             RE.Step();
             InDialog = true;
-            Trace("Calling face recognition");
+            LogLib.Log.Trace("Calling face recognition");
             var res = await RecognizeFace();
             if (res)
             {
-                Trace("Initiating FaceRecognized Event");
+                LogLib.Log.Trace("Initiating FaceRecognized Event");
                 RE.SetVar("Event", "FaceRecognized");
                 RE.Step();
                 if (! InferenceTimer.IsEnabled) InferenceTimer.Start(); //TODO check
@@ -389,7 +381,7 @@ namespace RoboShell
                 return false;
             }
             var startTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
-            Trace("RecognizeFace() started");
+            LogLib.Log.Trace("RecognizeFace() started");
             FaceWaitTimer.Stop();
             var photoAsStream = new MemoryStream();
             await MC.CapturePhotoToStreamAsync(ImageEncodingProperties.CreateJpeg(), photoAsStream.AsRandomAccessStream());
@@ -397,9 +389,9 @@ namespace RoboShell
             byte[] photoAsByteArray = photoAsStream.ToArray();
 
             var startTime2 = DateTimeOffset.Now.ToUnixTimeMilliseconds();
-            Trace("BEFORE ProcessPhotoAsync()");
+            LogLib.Log.Trace("BEFORE ProcessPhotoAsync()");
             PhotoInfoDTO photoInfo = await ProcessPhotoAsync(photoAsByteArray, Config.RecognizeEmotions);
-            Trace("AFTER ProcessPhotoAsync()");
+            LogLib.Log.Trace("AFTER ProcessPhotoAsync()");
             var endTime2 = DateTimeOffset.Now.ToUnixTimeMilliseconds();
             var res2 = endTime2 - startTime2;
             if (photoInfo.FoundAndProcessedFaces) {
@@ -411,15 +403,15 @@ namespace RoboShell
                 }
                 var endTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
                 var res = endTime - startTime;
-                Trace($"Face data: #faces={RE.State.Eval("FaceCount")}, age={RE.State.Eval("Age")}, gender={RE.State.Eval("Gender")}, emo={RE.State.Eval("Emotion")}");
-                Trace($"RecognizeFace() finished. Took {res} millis, {res2} in the cloud");
+                LogLib.Log.Trace($"Face data: #faces={RE.State.Eval("FaceCount")}, age={RE.State.Eval("Age")}, gender={RE.State.Eval("Gender")}, emo={RE.State.Eval("Emotion")}");
+                LogLib.Log.Trace($"RecognizeFace() finished. Took {res} millis, {res2} in the cloud");
                 return true;
             }
             else {
                 FaceWaitTimer.Start();
                 var endTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
                 var res = endTime - startTime;
-                Trace($"RecognizeFace() finished. Took {res} millis, {res2} in the cloud");
+                LogLib.Log.Trace($"RecognizeFace() finished. Took {res} millis, {res2} in the cloud");
                 return false;
             }
         }
@@ -445,13 +437,13 @@ namespace RoboShell
                         photoInfoDTO = JsonConvert.DeserializeObject<PhotoInfoDTO>(await response.Content.ReadAsStringAsync());
                     }
                     else {
-                        Trace("No faces found and analyzed");
+                        LogLib.Log.Trace("No faces found and analyzed");
                         photoInfoDTO = new PhotoInfoDTO {
                             FoundAndProcessedFaces = false
                         };
                     }
                 } catch (Exception e) {
-                    Trace("Error! Exception message: " + e.Message);
+                    LogLib.Log.Trace("Error! Exception message: " + e.Message);
                     photoInfoDTO = new PhotoInfoDTO {
                         FoundAndProcessedFaces = false
                     };
