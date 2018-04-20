@@ -6,8 +6,12 @@ using System.Threading.Tasks;
 
 namespace RoboShell
 {
-    public static class Config
-    {
+    public static class Config {
+        public static string proxy_host = "35.227.23.50";
+        public static int proxy_port = 1080; 
+        public static string proxy_protocol = "http";
+        public static string proxy_user = "proxyuser";
+        public static string proxy_password = "proxyuser";
         public static string CognitiveEndpoint = "https://roboshellcognitivelogic.azurewebsites.net/api/PhotosAnalyzer";
         public static bool RecognizeEmotions = true;
         public static int MinBoringSeconds = 10;

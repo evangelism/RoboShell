@@ -221,7 +221,7 @@ namespace RoboShell
 
         private void InferenceStep(object sender, object e)
         {
-            if (media.CurrentState == MediaElementState.Playing) return;
+            //if (media.CurrentState == MediaElementState.Playing) return;
             if (!InDialog) BoringCounter--;
             if (BoringCounter==0)
             {

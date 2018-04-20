@@ -112,7 +112,7 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.NETCore.UniversalWindowsPlatform">
-      <Version>6.0.4</Version>
+      <Version>6.0.8</Version>
     </PackageReference>
     <PackageReference Include="Serilog">
       <Version>2.6.0</Version>

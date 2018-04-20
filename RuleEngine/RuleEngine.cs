@@ -79,13 +79,16 @@ namespace RuleEngineNet
             {
                 var rule = ResolveConflict(cs);
                 LastActionLongRunning = rule.Then.LongRunning;
+                LogLib.Log.Trace("BEFORE execute()");
                 rule.Then.Execute(State);
+                LogLib.Log.Trace("AFTER execute()");
                 if (rule.Then.ActiveAfterExecution)
                 {
                     rule.Active = true;
                     rule.Then.ActiveAfterExecution = false;
                 }
                 else rule.Active = false;
+
                 return true;
             }
             return false;

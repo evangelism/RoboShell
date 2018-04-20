@@ -3,6 +3,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -15,9 +16,10 @@ using Windows.Storage;
 using Windows.Storage.Streams;
 using Windows.UI.Core;
 using Windows.UI.Xaml.Media;
+using CsvHelper;
 using RuleEngineNet;
 using RuleEngineUtils;
-
+using LogLib;
 // ReSharper disable StringLastIndexOfIsCultureSpecific.1
 
 // ReSharper disable StringIndexOfIsCultureSpecific.1
@@ -283,7 +285,6 @@ namespace RuleEngineNet {
                         if (m.Length != 0 && m.Groups["length"].Value.Length != 0)
                         {
                             var lengths = m.Groups["length"].Value.Split(':');
-                            ((Quiz) action).randomLength = true;
                             ((Quiz)action).lengthLowerBound = int.Parse(lengths[0]);
                             ((Quiz)action).lengthUpperBound = int.Parse(lengths[1]);
                         }
@@ -344,8 +345,10 @@ namespace RuleEngineNet {
         }
 
         public override void Execute(State S) {
+            LogLib.Log.Trace($"BEFORE {GetType().Name}.Execute()");
             if (Expr != null) S.Assign(Var, Expr.Eval(S));
             if (Value != null) S.Assign(Var, S.EvalString(Value));
+            LogLib.Log.Trace($"AFTER {GetType().Name}.Execute()");
         }
 
         public override void Initialize() {
@@ -369,7 +372,9 @@ namespace RuleEngineNet {
         }
 
         public override void Execute(State S) {
+            LogLib.Log.Trace($"BEFORE {GetType().Name}.Execute()");
             S.Remove(Var);
+            LogLib.Log.Trace($"AFTER {GetType().Name}.Execute()");
         }
 
         public static Clear Parse(XElement X) {
@@ -381,6 +386,7 @@ namespace RuleEngineNet {
         public List<Action> Actions { get; set; }
 
         public override void Execute(State S) {
+            LogLib.Log.Trace($"BEFORE {GetType().Name}.Execute()");
             foreach (var x in Actions)
             {
                 x.Execute(S);
@@ -388,8 +394,8 @@ namespace RuleEngineNet {
                     ActiveAfterExecution = true;
                     x.ActiveAfterExecution = false;
                 }
-
             }
+            LogLib.Log.Trace($"AFTER {GetType().Name}.Execute()");
         }
 
         protected bool? long_running;
@@ -426,12 +432,14 @@ namespace RuleEngineNet {
         public OneOf(IEnumerable<Action> Actions) : base(Actions) { }
 
         public override void Execute(State S) {
+            LogLib.Log.Trace($"BEFORE {GetType().Name}.Execute()");
             var x = Actions.OneOf();
             x.Execute(S);
             if (x.ActiveAfterExecution){
                 ActiveAfterExecution = true;
                 x.ActiveAfterExecution = false;
             }
+            LogLib.Log.Trace($"AFTER {GetType().Name}.Execute()");
         }
     }
 
@@ -452,6 +460,7 @@ namespace RuleEngineNet {
 
         public override void Execute(State S)
         {
+            LogLib.Log.Trace($"BEFORE {GetType().Name}.Execute()");
             var rand = new Random();
             if (rand.Next(1, 101) > Probability)
             {
@@ -461,6 +470,7 @@ namespace RuleEngineNet {
 
             Debug.WriteLine("say: " + S.EvalString(Text));
             SayHelper(S.EvalString(Text), S);
+            LogLib.Log.Trace($"AFTER {GetType().Name}.Execute()");
         }
 
         public static Say Parse(XElement X) {
@@ -505,6 +515,7 @@ namespace RuleEngineNet {
 
         public override void Execute(State S)
         {
+            LogLib.Log.Trace($"BEFORE {GetType().Name}.Execute()");
             if (S.ContainsKey(correctAnswersVarName) && S.ContainsKey(realAnswersVarName)) {
                 var tmp1 = S[correctAnswersVarName];
                 var tmp2 = S[realAnswersVarName];
@@ -533,6 +544,7 @@ namespace RuleEngineNet {
                 S["comparisonRes"] = res;
                 S["comparisonErrors"] = errors;
             }
+            LogLib.Log.Trace($"AFTER {GetType().Name}.Execute()");
         }
 
 
@@ -541,7 +553,9 @@ namespace RuleEngineNet {
     public class ShutUp : Action {
         public static UWPLocalSpeaker Speaker { get; set; }
         public override void Execute(State S) {
+            LogLib.Log.Trace($"BEFORE {GetType().Name}.Execute()");
             Speaker.ShutUp();
+            LogLib.Log.Trace($"AFTER {GetType().Name}.Execute()");
         }
 
         public override void Initialize() { }
@@ -578,6 +592,7 @@ namespace RuleEngineNet {
 
         public override void Execute(State S)
         {
+            LogLib.Log.Trace($"BEFORE {GetType().Name}.Execute()");
             var rand = new Random();
             if (rand.Next(1, 101) > Probability)
             {
@@ -590,7 +605,7 @@ namespace RuleEngineNet {
             else {
                 Speaker.Play(FileName, _duration);
             }
-
+            LogLib.Log.Trace($"AFTER {GetType().Name}.Execute()");
         }
 
         public static Play Parse(XElement X, int _prob) {
@@ -602,7 +617,9 @@ namespace RuleEngineNet {
     public class StayActive : Action
     {
         public override void Execute(State S) {
+            LogLib.Log.Trace($"BEFORE {GetType().Name}.Execute()");
             ActiveAfterExecution = true;
+            LogLib.Log.Trace($"AFTER {GetType().Name}.Execute()");
         }
         public override void Initialize() { }
 
@@ -621,7 +638,9 @@ namespace RuleEngineNet {
         }
 
         public override void Execute(State S) {
+            LogLib.Log.Trace($"BEFORE {GetType().Name}.Execute()");
             Executor(Command, Param);
+            LogLib.Log.Trace($"AFTER {GetType().Name}.Execute()");
         }
 
         public override void Initialize() { }
@@ -644,6 +663,8 @@ namespace RuleEngineNet {
         private Task task = Task.CompletedTask;
         private static Boolean stopExecution = false;
         private static Boolean executing = false;
+        public override bool LongRunning => true;
+
 
         public override void Initialize() { }
 
@@ -658,6 +679,7 @@ namespace RuleEngineNet {
 
         public override void Execute(State S)
         {
+            LogLib.Log.Trace($"BEFORE {GetType().Name}.Execute()");
             System.Diagnostics.Debug.WriteLine($"GPIO_TASK {task.Status}");
             var rand = new Random();
             int tmp = rand.Next(1, 101);
@@ -709,7 +731,7 @@ namespace RuleEngineNet {
                 executing = false;
             });
             System.Diagnostics.Debug.WriteLine("Exited GPIO");
-            return;
+            LogLib.Log.Trace($"AFTER {GetType().Name}.Execute()");
         }
 
         public static GPIO Parse(XElement X) {
@@ -726,73 +748,210 @@ namespace RuleEngineNet {
 
     public class Quiz : Action {
 
-        private string quizCsv = null;
+        private Uri quizFileName = null;
         public bool randomOrdered = false;
-        public bool randomLength = false;
         public int lengthLowerBound;
         public int lengthUpperBound;
         public static UWPLocalSpeaker Speaker;
-        private IList<Tuple<string, bool>> _quizText = new List<Tuple<string, bool>>();
-        private IList<Tuple<SpeechSynthesisStream, bool>> _quiz = new List<Tuple<SpeechSynthesisStream, bool>>();
-        public Quiz(string quizCsv)
-        {
-            this.quizCsv = quizCsv;
-            var quest1 = "вопрос первый";
-            var answ1 = false;
-            var quest2 = "вопрос второй";
-            var answ2 = false;
+        private IList<Tuple<string, bool?, string>> _quizText = new List<Tuple<string, bool?, string>>();
+        private IList<Tuple<SpeechSynthesisStream, bool?, SpeechSynthesisStream>> _quiz = new List<Tuple<SpeechSynthesisStream, bool?, SpeechSynthesisStream>>();
+        private static IEnumerable<int> QUESTION_SIGNAL = new []{1, 0, 1, 1};
+        private static IEnumerable<int> DEFAULT_SIGNAL = new[] { 0, 0, 0, 0 };
 
-            _quizText.Add(new Tuple<string, bool>(quest1, answ1));
-            _quizText.Add(new Tuple<string, bool>(quest2, answ2));
+        private static int QUIZ_QUESTION_TIME_MILLIS = 20000;
+        private GPIO _questionner = new GPIO(QUESTION_SIGNAL, QUIZ_QUESTION_TIME_MILLIS, 100);
+        private GPIO _defaultArduinoState = new GPIO(DEFAULT_SIGNAL, 5000, 100);
+        public override bool LongRunning => false;
+
+
+        public Quiz(string quizFileName)
+        {
+            this.quizFileName = new Uri("ms-appx:///Quizs/" + quizFileName);
+
+            var quest1 = "ответь нет";
+            var expl1 = "правильный ответ нет";
+            bool? answ1 = false;
+
+            var quest2 = "ответь хоть что-то";
+            var expl2 = "правильный ответ любой";
+            bool? answ2 = null;
+
+            var quest3 = "ответь да";
+            var expl3 = "правильный ответ да";
+            bool? answ3 = true;
+
+
+            Task.Run(async () => {
+                StorageFile f = await StorageFile.GetFileFromApplicationUriAsync(this.quizFileName);
+                using (var inputStream = await f.OpenReadAsync())
+                using (var classicStream = inputStream.AsStreamForRead())
+                using (TextReader fileReader = new StreamReader(classicStream))
+                {
+                    var csv = new CsvReader(fileReader);
+                    csv.Configuration.HasHeaderRecord = false;
+                    csv.Configuration.Delimiter = ";";
+                    csv.Configuration.IgnoreQuotes = false;
+                    while (csv.Read())
+                    {
+                        Debug.WriteLine(csv.GetField(0));
+
+                        bool? answ;
+                        if (csv.GetField(1) == "да") answ = true;
+                        else if (csv.GetField(1) == "нет") answ = false;
+                        else answ = null;
+
+                        _quizText.Add(new Tuple<string, bool?, string>(csv.GetField(0), answ, csv.GetField(2)));
+                        
+
+                    }
+                }
+            }).Wait();
+
+            
+            lengthLowerBound = _quizText.Count();
+            lengthUpperBound = _quizText.Count();
+
+
+
+
+        }
+        private static string ARDUIO_NO = "0,0,1,0";
+        private static string ARDUINO_YES = "0,1,0,0";
+        private static string ARDUINO_NONE = "NOANSWER";
+        private Random random = new Random();
+
+
+        public override void Initialize() {
+            Task.Run(async () => {
+                for (int i = 0; i < _quizText.Count; i++) {
+                    _quiz.Add(new Tuple<SpeechSynthesisStream, bool?, SpeechSynthesisStream>(
+                        await Speaker.Synthesizer.SynthesizeTextToStreamAsync(_quizText.ElementAt(i).Item1),
+                        _quizText.ElementAt(i).Item2,
+                        await Speaker.Synthesizer.SynthesizeTextToStreamAsync(_quizText.ElementAt(i).Item3)));
+                }
+            }).Wait();
+
+            
 
             
 
         }
 
-        public override void Initialize() {
-            SpeechSynthesisStream q1stream = null;
-            SpeechSynthesisStream q2stream = null;
-
-            Task.Run(async () => {
-                for (int i = 0; i < _quizText.Count; i++)
-                {
-                    _quiz.Add(new Tuple<SpeechSynthesisStream, bool>(await Speaker.Synthesizer.SynthesizeTextToStreamAsync(_quizText.ElementAt(i).Item1), _quizText.ElementAt(i).Item2));
-                }
-            }).Wait();
-        }
-
 
         public override void Execute(State S) {
-            QuizHelper(S);
+            LogLib.Log.Trace($"BEFORE {GetType().Name}.Execute()");
+            Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunTaskAsync(() => (QuizHelper(S)));
+            LogLib.Log.Trace($"AFTER {GetType().Name}.Execute()");
         }
 
-        public async void QuizHelper(State S)
+        private async Task QuizHelper(State S)
         {
-            for (int i = 0; i < _quiz.Count; i++) {
-                Debug.WriteLine("1");
+            if (S.ContainsKey("inQuiz")) {
+                if (S["inQuiz"] == "True") {
+                    return;
+                }
+            }
+            S.Assign("inQuiz", "True");
+            if (!S.ContainsKey("ArduinoInput")) {
+                S["ArduinoInput"] = "";
+            }
+            if (!S.ContainsKey("KeyboardIn"))
+            {
+                S["KeyboardIn"] = "";
+            }
+
+            var userAnswers = new List<bool?>();
+            var correctAnswers = new List<bool?>();
+
+            var length = random.Next(lengthLowerBound, lengthUpperBound);
+            var quests = Enumerable.Range(0, _quiz.Count).ToList();
+            List<int> questionsToAsk = (randomOrdered ? quests.OrderBy(item => random.Next()).ToList() : quests).GetRange(0, Math.Min(length, _quiz.Count));
+
+            foreach (var i in questionsToAsk) {
                 while (Say.isPlaying) {
                     await Task.Delay(TimeSpan.FromMilliseconds(300));
                 }
 
-                Debug.WriteLine("2");
+                _questionner.Execute(S);
+                correctAnswers.Add(_quiz.ElementAt(i).Item2);
+                await NewFunction(S, _quiz.ElementAt(i).Item1);
+                S.Assign("isPlaying", "False");
+
+
+
+                try {
+                    while (S["ArduinoInput"] != ARDUINO_YES && 
+                           S["ArduinoInput"] != ARDUIO_NO && 
+                           S["ArduinoInput"] != ARDUINO_NONE && 
+                           S["KeyboardIn"] != "yes" &&
+                           S["KeyboardIn"] != "no" &&
+                           S["KeyboardIn"] != "none")
+                    {
+                        await Task.Delay(TimeSpan.FromMilliseconds(200));
+                    }
+
+                    if (S["KeyboardIn"] == "yes" || S["ArduinoInput"] == ARDUINO_YES) userAnswers.Add(true);
+                    else if (S["KeyboardIn"] == "no" || S["ArduinoInput"] == ARDUIO_NO) userAnswers.Add(false);
+                    else if (S["KeyboardIn"] == "none" || S["ArduinoInput"] == ARDUIO_NO) userAnswers.Add(null);
+                    S["KeyboardIn"] = "";
+                }
+                catch (KeyNotFoundException e) {
+                    S.Assign("inQuiz", "False");
+                    return;
+                }
+                
+            }
+            var result = compareLists(correctAnswers, userAnswers);
+            foreach (var i in result.Item1) {
+                await NewFunction(S, _quiz.ElementAt(questionsToAsk[i]).Item3);
+            }
+
+            if (result.Item1.Count == 0) {
+                await NewFunction(S, await Speaker.Synthesizer.SynthesizeTextToStreamAsync("всё правильно"));
+
+            }
+            _defaultArduinoState.Execute(S);
+            S.Assign("inQuiz", "False");
+
+            async Task NewFunction(State state, SpeechSynthesisStream s) {
                 Say.isPlaying = true;
-                S.Assign("isPlaying", "True");
-                Debug.WriteLine("3");
+                state.Assign("isPlaying", "True");
                 await Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunTaskAsync(() =>
-                    Say.Speaker.Speak(_quiz.ElementAt(i).Item1));
-                Debug.WriteLine("4");
+                    Say.Speaker.Speak(s));
                 await Task.Delay(TimeSpan.FromMilliseconds(500));
-                Debug.WriteLine("5");
                 while (Say.Speaker.Media.CurrentState != MediaElementState.Closed &&
                        Say.Speaker.Media.CurrentState != MediaElementState.Stopped &&
                        Say.Speaker.Media.CurrentState != MediaElementState.Paused) {
-                    await Task.Delay(TimeSpan.FromMilliseconds(500));
+                    await Task.Delay(TimeSpan.FromMilliseconds(100));
                 }
 
-                Debug.WriteLine("6");
                 Say.isPlaying = false;
-                S.Assign("isPlaying", "False");
             }
+        }
+
+        private Tuple<List<int>, int> compareLists(List<bool?> orig, List<bool?> copy) {
+            List<int> errors = new List<int>();
+            int numberOfCorrectAnswers = 0;
+            int numberOfQuestions = orig.Count;
+            for (int i = 0; i < numberOfQuestions; i++) {
+                if (orig[i] == null) {
+                    if (copy[i] != null) {
+                        numberOfCorrectAnswers += 1;
+                    }
+                    else {
+                        errors.Add(i);
+                    }
+                }
+                else if (orig[i] == copy[i]) {
+                    numberOfCorrectAnswers += 1;
+                }
+                else {
+                    errors.Add(i);
+                }
+            }
+
+
+            return new Tuple<List<int>, int>(errors, ((int)((float)numberOfCorrectAnswers / numberOfQuestions * 100)));
         }
     }
 }

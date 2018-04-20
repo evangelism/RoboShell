@@ -1,4 +1,9 @@
-﻿($Event == "Key_1") => ((quiz "quiz.csv" randomOrder 2:5) and (stayActive) and (clear $Event))
-($Event == "Key_2") => ((quiz "quiz.csv" 2:5) and (stayActive) and (clear $Event))
-($Event == "Key_3") => ((quiz "quiz.csv" randomOrder) and (stayActive) and (clear $Event))
-($Event == "Key_4") => ((quiz "quiz.csv") and (stayActive) and (clear $Event))
+﻿($Event == "Key_6") => ((stayActive) and (clear $Event) and (KeyboardIn = "yes"))
+($Event == "Key_7") => ((stayActive) and (clear $Event) and (KeyboardIn = "no"))
+($Event == "Key_8") => ((stayActive) and (clear $Event) and (KeyboardIn = "none"))
+
+($Event == "Key_3") => ((stayActive) and (clear $Event) and (shutUp))
+
+
+($Event == "Key_1") => ((quiz "quiz.csv" randomOrder 2:5) and (stayActive) and (clear $Event))
+
