@@ -758,7 +758,7 @@ namespace RuleEngineNet {
         private static IEnumerable<int> QUESTION_SIGNAL = new []{1, 0, 1, 1};
         private static IEnumerable<int> DEFAULT_SIGNAL = new[] { 0, 0, 0, 0 };
 
-        private static int QUIZ_QUESTION_TIME_MILLIS = 20000;
+        private static int QUIZ_QUESTION_TIME_MILLIS = 2000000;
         private GPIO _questionner = new GPIO(QUESTION_SIGNAL, QUIZ_QUESTION_TIME_MILLIS, 100);
         private GPIO _defaultArduinoState = new GPIO(DEFAULT_SIGNAL, 5000, 100);
         public override bool LongRunning => false;
@@ -815,9 +815,9 @@ namespace RuleEngineNet {
 
 
         }
-        private static string ARDUIO_NO = "0,0,1,0";
-        private static string ARDUINO_YES = "0,1,0,0";
-        private static string ARDUINO_NONE = "NOANSWER";
+        private static string ARDUIO_NO = "0010";
+        private static string ARDUINO_YES = "0100";
+        private static string ARDUINO_NONE = "0001";
         private Random random = new Random();
 
 
@@ -872,14 +872,16 @@ namespace RuleEngineNet {
                     await Task.Delay(TimeSpan.FromMilliseconds(300));
                 }
 
-                _questionner.Execute(S);
                 correctAnswers.Add(_quiz.ElementAt(i).Item2);
-                await NewFunction(S, _quiz.ElementAt(i).Item1);
+                await SpeakingFunction(S, _quiz.ElementAt(i).Item1);
                 S.Assign("isPlaying", "False");
 
+                //await Task.Delay(TimeSpan.FromMilliseconds(500));
 
-
-                try {
+                try
+                {
+                    _questionner.Execute(S);
+                    LogLib.Log.Trace("Started fixation");
                     while (S["ArduinoInput"] != ARDUINO_YES && 
                            S["ArduinoInput"] != ARDUIO_NO && 
                            S["ArduinoInput"] != ARDUINO_NONE && 
@@ -892,8 +894,10 @@ namespace RuleEngineNet {
 
                     if (S["KeyboardIn"] == "yes" || S["ArduinoInput"] == ARDUINO_YES) userAnswers.Add(true);
                     else if (S["KeyboardIn"] == "no" || S["ArduinoInput"] == ARDUIO_NO) userAnswers.Add(false);
-                    else if (S["KeyboardIn"] == "none" || S["ArduinoInput"] == ARDUIO_NO) userAnswers.Add(null);
+                    else if (S["KeyboardIn"] == "none" || S["ArduinoInput"] == ARDUINO_NONE) userAnswers.Add(null);
                     S["KeyboardIn"] = "";
+                    LogLib.Log.Trace("Finished fixation");
+                    _defaultArduinoState.Execute(S);
                 }
                 catch (KeyNotFoundException e) {
                     S.Assign("inQuiz", "False");
@@ -903,17 +907,16 @@ namespace RuleEngineNet {
             }
             var result = compareLists(correctAnswers, userAnswers);
             foreach (var i in result.Item1) {
-                await NewFunction(S, _quiz.ElementAt(questionsToAsk[i]).Item3);
+                await SpeakingFunction(S, _quiz.ElementAt(questionsToAsk[i]).Item3);
             }
 
             if (result.Item1.Count == 0) {
-                await NewFunction(S, await Speaker.Synthesizer.SynthesizeTextToStreamAsync("всё правильно"));
+                await SpeakingFunction(S, await Speaker.Synthesizer.SynthesizeTextToStreamAsync("всё правильно"));
 
             }
-            _defaultArduinoState.Execute(S);
             S.Assign("inQuiz", "False");
 
-            async Task NewFunction(State state, SpeechSynthesisStream s) {
+            async Task SpeakingFunction(State state, SpeechSynthesisStream s) {
                 Say.isPlaying = true;
                 state.Assign("isPlaying", "True");
                 await Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunTaskAsync(() =>

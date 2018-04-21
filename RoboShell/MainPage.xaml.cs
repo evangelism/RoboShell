@@ -192,7 +192,7 @@ namespace RoboShell
                 }
             }
             if (input != "0000") {
-                //                LogLib.Log.Trace($"Received: {input}");
+                LogLib.Log.Trace($"Received: {input}");
             }
             RE.SetVar("ArduinoInput", input);
         }
