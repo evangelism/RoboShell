@@ -1,0 +1,4 @@
+﻿RobotName = "Лариса Сергеевна"
+
+($Event == "FaceIn") => (say "привет")
+($Event == "FaceOut") => (say "пока")

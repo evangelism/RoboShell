@@ -253,8 +253,14 @@ namespace RoboShell
             
         
             await MC.InitializeAsync(settings);
-            var resolutions = MC.VideoDeviceController.GetAvailableMediaStreamProperties(MediaStreamType.Photo).Select(x => x as VideoEncodingProperties);
-            var maxRes = resolutions.OrderBy(x => x.Height * x.Width).FirstOrDefault();
+            var resolutions = MC.VideoDeviceController.GetAvailableMediaStreamProperties(MediaStreamType.Photo).Select(x => x as VideoEncodingProperties).OrderBy(x => x.Height * x.Width);
+            VideoEncodingProperties maxRes = resolutions.FirstOrDefault();
+            for (int i = 0; i < resolutions.Count(); i++) {
+                if (resolutions.ElementAt(i).Width >= 320) {
+                    maxRes = resolutions.ElementAt(i);
+                    break;
+                }
+            }
             await MC.VideoDeviceController.SetMediaStreamPropertiesAsync(MediaStreamType.Photo, maxRes);
 
             if (!Config.Headless)
