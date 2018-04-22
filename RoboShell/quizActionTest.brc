@@ -3,7 +3,10 @@
 ($Event == "Key_7") => ((stayActive) and (clear $Event) and (KeyboardIn = "no"))
 ($Event == "Key_8") => ((stayActive) and (clear $Event) and (KeyboardIn = "none"))
 
-($Event == "Key_3") => ((stayActive) and (clear $Event) and (shutUp))
+($Event == "Key_3") => ((stayActive) and (clear $Event) and (isPaused = "True"))
+($Event == "Key_4") => ((stayActive) and (clear $Event) and (isPaused = "False"))
 
+($Event == "Key_9") => ((stayActive) and (clear $Event) and (stopQuiz = "True"))
+($Event == "Key_0") => ((stayActive) and (clear $Event) and (stopQuiz = "False"))
 
 ($Event == "Key_1") => ((quiz "quiz.csv" randomOrder 2:5) and (stayActive) and (clear $Event))

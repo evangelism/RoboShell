@@ -831,6 +831,7 @@ namespace RuleEngineNet {
                 }
             }
             S.Assign("inQuiz", "True");
+
             if (!S.ContainsKey("ArduinoInput")) {
                 S["ArduinoInput"] = "";
             }
@@ -838,6 +839,15 @@ namespace RuleEngineNet {
             {
                 S["KeyboardIn"] = "";
             }
+            if (!S.ContainsKey("isPaused"))
+            {
+                S["isPaused"] = "";
+            }
+            if (!S.ContainsKey("stopQuiz"))
+            {
+                S["stopQuiz"] = "";
+            }
+
 
             var userAnswers = new List<bool?>();
             var correctAnswers = new List<bool?>();
@@ -846,28 +856,60 @@ namespace RuleEngineNet {
             var quests = Enumerable.Range(0, _quiz.Count).ToList();
             var questionsToAsk = (randomOrdered ? quests.OrderBy(item => random.Next()).ToList() : quests).GetRange(0, Math.Min(length, _quiz.Count));
 
-            foreach (var i in questionsToAsk) {
+            for (var i = 0; i < questionsToAsk.Count; i++) {
+
+                if (S["stopQuiz"] == "True")
+                {
+                    S.Assign("inQuiz", "False");
+                    return;
+                }
+                if (S["isPaused"] == "True") {
+                    await Task.Delay(TimeSpan.FromMilliseconds(300));
+                    i--;
+                    Log.Trace("paused, waiting");
+                    continue;
+                }
+
+                
+                Log.Trace("continuing");
+
                 while (Say.isPlaying) {
                     await Task.Delay(TimeSpan.FromMilliseconds(300));
                 }
+                var questionToAskPosition = questionsToAsk[i];
 
-                correctAnswers.Add(_quiz.ElementAt(i).Item2);
-                await SpeakingFunction(S, _quiz.ElementAt(i).Item1);
+                await SpeakingFunction(S, _quiz.ElementAt(questionToAskPosition).Item1);
                 S.Assign("isPlaying", "False");
 
-                try
-                {
+                try {
+                    //bool isPaused = false;
                     _questionner.Execute(S);
                     LogLib.Log.Trace("Started fixation");
-                    while (S["ArduinoInput"] != ARDUINO_YES && 
-                           S["ArduinoInput"] != ARDUINO_NO && 
-                           S["ArduinoInput"] != ARDUINO_NONE && 
+                    while (S["ArduinoInput"] != ARDUINO_YES &&
+                           S["ArduinoInput"] != ARDUINO_NO &&
+                           S["ArduinoInput"] != ARDUINO_NONE &&
                            S["KeyboardIn"] != "yes" &&
                            S["KeyboardIn"] != "no" &&
-                           S["KeyboardIn"] != "none")
-                    {
+                           S["KeyboardIn"] != "none") {
                         await Task.Delay(TimeSpan.FromMilliseconds(200));
+                        if (S["isPaused"] == "True" || S["stopQuiz"] == "True") {
+                            break;
+                        }
                     }
+
+                    if (S["stopQuiz"] == "True")
+                    {
+                        S.Assign("inQuiz", "False");
+                        return;
+                    }
+                    if (S["isPaused"] == "True") {
+                        i--;
+                        Log.Trace("paused, waiting");
+                        continue;
+                    }
+                    
+
+                    correctAnswers.Add(_quiz.ElementAt(questionToAskPosition).Item2);
 
                     if (S["KeyboardIn"] == "none" || S["ArduinoInput"] == ARDUINO_NONE) {
                         await Task.Delay(TimeSpan.FromMilliseconds(3000));

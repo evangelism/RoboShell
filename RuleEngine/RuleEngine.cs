@@ -51,7 +51,7 @@ namespace RuleEngineNet
 
         public void Reset()
         {
-            State = new State(InitialState);
+            //State = new State(InitialState);
             foreach(var x in KnowlegeBase)
             {
                 x.Active = true;
