@@ -28,6 +28,7 @@ using System.Net;
 using Windows.Devices.Gpio;
 using System.Collections.Generic;
 using System.Diagnostics;
+using Windows.Devices.Perception;
 using Windows.Storage;
 using Microsoft.Extensions.Logging;
 using Serilog;
@@ -240,8 +241,19 @@ namespace RoboShell
             MC = new MediaCapture();
             var cameras = await DeviceInformation.FindAllAsync(DeviceClass.VideoCapture);
             var camera = cameras.Last();
-            var settings = new MediaCaptureInitializationSettings() { VideoDeviceId = camera.Id };
+            var settings = new MediaCaptureInitializationSettings() { VideoDeviceId = camera.Id, StreamingCaptureMode = StreamingCaptureMode.Video};
+            
+        
             await MC.InitializeAsync(settings);
+            var resolutions = MC.VideoDeviceController.GetAvailableMediaStreamProperties(MediaStreamType.Photo).Select(x => x as VideoEncodingProperties).OrderBy(x => x.Height * x.Width);
+            VideoEncodingProperties maxRes = resolutions.FirstOrDefault();
+            for (int i = 0; i < resolutions.Count(); i++) {
+                if (resolutions.ElementAt(i).Width >= 320) {
+                    maxRes = resolutions.ElementAt(i);
+                    break;
+                }
+            }
+            await MC.VideoDeviceController.SetMediaStreamPropertiesAsync(MediaStreamType.Photo, maxRes);
 
             if (!Config.Headless)
             {
@@ -383,6 +395,10 @@ namespace RoboShell
             LogLib.Log.Trace("RecognizeFace() started");
             FaceWaitTimer.Stop();
             var photoAsStream = new MemoryStream();
+            var t1 = MC.VideoDeviceController.GetMediaStreamProperties(MediaStreamType.VideoPreview);
+            var t2 = MC.VideoDeviceController.GetMediaStreamProperties(MediaStreamType.Photo);
+
+
             await MC.CapturePhotoToStreamAsync(ImageEncodingProperties.CreateJpeg(), photoAsStream.AsRandomAccessStream());
 
             byte[] photoAsByteArray = photoAsStream.ToArray();
