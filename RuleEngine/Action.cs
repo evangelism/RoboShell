@@ -754,35 +754,27 @@ namespace RuleEngineNet {
         public int lengthUpperBound;
         public static UWPLocalSpeaker Speaker;
         private IList<Tuple<string, bool?, string>> _quizText = new List<Tuple<string, bool?, string>>();
-        private IList<Tuple<SpeechSynthesisStream, bool?, SpeechSynthesisStream>> _quiz = new List<Tuple<SpeechSynthesisStream, bool?, SpeechSynthesisStream>>();
+        private readonly IList<Tuple<SpeechSynthesisStream, bool?, SpeechSynthesisStream>> _quiz = new List<Tuple<SpeechSynthesisStream, bool?, SpeechSynthesisStream>>();
         private static IEnumerable<int> QUESTION_SIGNAL = new []{1, 0, 1, 1};
-        private static IEnumerable<int> DEFAULT_SIGNAL = new[] { 0, 0, 0, 0 };
+        private static IEnumerable<int> DEFAULT_SIGNAL = new[] { 0, 1, 0, 0 };
+
+        private static string ARDUINO_NO = "0010";
+        private static string ARDUINO_YES = "0100";
+        private static string ARDUINO_NONE = "0001";
 
         private static int QUIZ_QUESTION_TIME_MILLIS = 2000000;
         private GPIO _questionner = new GPIO(QUESTION_SIGNAL, QUIZ_QUESTION_TIME_MILLIS, 100);
         private GPIO _defaultArduinoState = new GPIO(DEFAULT_SIGNAL, 5000, 100);
         public override bool LongRunning => false;
+        private Random random = new Random();
 
 
         public Quiz(string quizFileName)
         {
             this.quizFileName = new Uri("ms-appx:///Quizs/" + quizFileName);
 
-            var quest1 = "ответь нет";
-            var expl1 = "правильный ответ нет";
-            bool? answ1 = false;
-
-            var quest2 = "ответь хоть что-то";
-            var expl2 = "правильный ответ любой";
-            bool? answ2 = null;
-
-            var quest3 = "ответь да";
-            var expl3 = "правильный ответ да";
-            bool? answ3 = true;
-
-
             Task.Run(async () => {
-                StorageFile f = await StorageFile.GetFileFromApplicationUriAsync(this.quizFileName);
+                var f = await StorageFile.GetFileFromApplicationUriAsync(this.quizFileName);
                 using (var inputStream = await f.OpenReadAsync())
                 using (var classicStream = inputStream.AsStreamForRead())
                 using (TextReader fileReader = new StreamReader(classicStream))
@@ -791,50 +783,37 @@ namespace RuleEngineNet {
                     csv.Configuration.HasHeaderRecord = false;
                     csv.Configuration.Delimiter = ";";
                     csv.Configuration.IgnoreQuotes = false;
-                    while (csv.Read())
-                    {
-                        Debug.WriteLine(csv.GetField(0));
 
+                    while (csv.Read()) {
                         bool? answ;
-                        if (csv.GetField(1) == "да") answ = true;
-                        else if (csv.GetField(1) == "нет") answ = false;
-                        else answ = null;
+                        if (csv.GetField(1) == "да") {
+                            answ = true;
+                        }
+                        else if (csv.GetField(1) == "нет") {
+                            answ = false;
+                        }
+                        else {
+                            answ = null;
+                        }
 
                         _quizText.Add(new Tuple<string, bool?, string>(csv.GetField(0), answ, csv.GetField(2)));
-                        
-
                     }
                 }
             }).Wait();
 
-            
-            lengthLowerBound = _quizText.Count();
-            lengthUpperBound = _quizText.Count();
-
-
-
-
+            lengthLowerBound = lengthUpperBound = _quizText.Count();
         }
-        private static string ARDUIO_NO = "0010";
-        private static string ARDUINO_YES = "0100";
-        private static string ARDUINO_NONE = "0001";
-        private Random random = new Random();
-
+        
 
         public override void Initialize() {
             Task.Run(async () => {
-                for (int i = 0; i < _quizText.Count; i++) {
+                for (var i = 0; i < _quizText.Count; i++) {
                     _quiz.Add(new Tuple<SpeechSynthesisStream, bool?, SpeechSynthesisStream>(
                         await Speaker.Synthesizer.SynthesizeTextToStreamAsync(_quizText.ElementAt(i).Item1),
                         _quizText.ElementAt(i).Item2,
                         await Speaker.Synthesizer.SynthesizeTextToStreamAsync(_quizText.ElementAt(i).Item3)));
                 }
             }).Wait();
-
-            
-
-            
-
         }
 
 
@@ -865,7 +844,7 @@ namespace RuleEngineNet {
 
             var length = random.Next(lengthLowerBound, lengthUpperBound);
             var quests = Enumerable.Range(0, _quiz.Count).ToList();
-            List<int> questionsToAsk = (randomOrdered ? quests.OrderBy(item => random.Next()).ToList() : quests).GetRange(0, Math.Min(length, _quiz.Count));
+            var questionsToAsk = (randomOrdered ? quests.OrderBy(item => random.Next()).ToList() : quests).GetRange(0, Math.Min(length, _quiz.Count));
 
             foreach (var i in questionsToAsk) {
                 while (Say.isPlaying) {
@@ -876,14 +855,12 @@ namespace RuleEngineNet {
                 await SpeakingFunction(S, _quiz.ElementAt(i).Item1);
                 S.Assign("isPlaying", "False");
 
-                //await Task.Delay(TimeSpan.FromMilliseconds(500));
-
                 try
                 {
                     _questionner.Execute(S);
                     LogLib.Log.Trace("Started fixation");
                     while (S["ArduinoInput"] != ARDUINO_YES && 
-                           S["ArduinoInput"] != ARDUIO_NO && 
+                           S["ArduinoInput"] != ARDUINO_NO && 
                            S["ArduinoInput"] != ARDUINO_NONE && 
                            S["KeyboardIn"] != "yes" &&
                            S["KeyboardIn"] != "no" &&
@@ -892,20 +869,35 @@ namespace RuleEngineNet {
                         await Task.Delay(TimeSpan.FromMilliseconds(200));
                     }
 
-                    if (S["KeyboardIn"] == "yes" || S["ArduinoInput"] == ARDUINO_YES) userAnswers.Add(true);
-                    else if (S["KeyboardIn"] == "no" || S["ArduinoInput"] == ARDUIO_NO) userAnswers.Add(false);
-                    else if (S["KeyboardIn"] == "none" || S["ArduinoInput"] == ARDUINO_NONE) userAnswers.Add(null);
+                    if (S["KeyboardIn"] == "none" || S["ArduinoInput"] == ARDUINO_NONE) {
+                        await Task.Delay(TimeSpan.FromMilliseconds(3000));
+                    }
+
+
+                    if (S["KeyboardIn"] == "yes" || S["ArduinoInput"] == ARDUINO_YES) {
+                        userAnswers.Add(true);
+                        S["lastAnswer"] = "True";
+                    }
+                    else if (S["KeyboardIn"] == "no" || S["ArduinoInput"] == ARDUINO_NO) {
+                        userAnswers.Add(false);
+                        S["lastAnswer"] = "False";
+                    }
+                    else if (S["KeyboardIn"] == "none" || S["ArduinoInput"] == ARDUINO_NONE) {
+                        userAnswers.Add(null);
+                        S["lastAnswer"] = "None";
+                    }
+
                     S["KeyboardIn"] = "";
                     LogLib.Log.Trace("Finished fixation");
                     _defaultArduinoState.Execute(S);
                 }
-                catch (KeyNotFoundException e) {
+                catch (KeyNotFoundException) {
                     S.Assign("inQuiz", "False");
                     return;
                 }
-                
             }
-            var result = compareLists(correctAnswers, userAnswers);
+
+            var result = CompareLists(correctAnswers, userAnswers);
             foreach (var i in result.Item1) {
                 await SpeakingFunction(S, _quiz.ElementAt(questionsToAsk[i]).Item3);
             }
@@ -932,11 +924,12 @@ namespace RuleEngineNet {
             }
         }
 
-        private Tuple<List<int>, int> compareLists(List<bool?> orig, List<bool?> copy) {
-            List<int> errors = new List<int>();
-            int numberOfCorrectAnswers = 0;
-            int numberOfQuestions = orig.Count;
-            for (int i = 0; i < numberOfQuestions; i++) {
+        private Tuple<List<int>, int> CompareLists(List<bool?> orig, List<bool?> copy) {
+            var errors = new List<int>();
+            var numberOfCorrectAnswers = 0;
+            var numberOfQuestions = orig.Count;
+
+            for (var i = 0; i < numberOfQuestions; i++) {
                 if (orig[i] == null) {
                     if (copy[i] != null) {
                         numberOfCorrectAnswers += 1;
@@ -952,7 +945,6 @@ namespace RuleEngineNet {
                     errors.Add(i);
                 }
             }
-
 
             return new Tuple<List<int>, int>(errors, ((int)((float)numberOfCorrectAnswers / numberOfQuestions * 100)));
         }

@@ -1,3 +1,4 @@
+﻿
 ﻿($Event == "Key_6") => ((stayActive) and (clear $Event) and (KeyboardIn = "yes"))
 ($Event == "Key_7") => ((stayActive) and (clear $Event) and (KeyboardIn = "no"))
 ($Event == "Key_8") => ((stayActive) and (clear $Event) and (KeyboardIn = "none"))
@@ -6,4 +7,3 @@
 
 
 ($Event == "Key_1") => ((quiz "quiz.csv" randomOrder 2:5) and (stayActive) and (clear $Event))
-
