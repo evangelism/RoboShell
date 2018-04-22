@@ -52,6 +52,7 @@ namespace RoboShell
         MediaCapture MC;
 
         DispatcherTimer FaceWaitTimer = new DispatcherTimer() { Interval = TimeSpan.FromSeconds(2) };
+        DispatcherTimer PreDropoutTimer = new DispatcherTimer() { Interval = TimeSpan.FromSeconds(2) };
         DispatcherTimer DropoutTimer = new DispatcherTimer() { Interval = TimeSpan.FromSeconds(7) };
         DispatcherTimer InferenceTimer = new DispatcherTimer() { Interval = TimeSpan.FromSeconds(1) };
         DispatcherTimer GpioTimer = new DispatcherTimer() { Interval = TimeSpan.FromMilliseconds(500) };
@@ -122,6 +123,7 @@ namespace RoboShell
             RE.SetExecutor(ExExecutor);
             FaceWaitTimer.Tick += StartDialog;
             DropoutTimer.Tick += FaceDropout;
+            PreDropoutTimer.Tick += PreDropout;
             InferenceTimer.Tick += InferenceStep;
             InitGpio();
             if (gpio != null)
@@ -308,11 +310,13 @@ namespace RoboShell
                 {
                     IsFacePresent = false;
                     DropoutTimer.Start();
+                    PreDropoutTimer.Start();
                 }
             }
             else
             {
                 DropoutTimer.Stop();
+                PreDropoutTimer.Stop();
                 if (!Config.Headless)
                 {
                     FaceRect.Margin = new Thickness(cx * face.FaceBox.X, cy * face.FaceBox.Y, 0, 0);
@@ -360,6 +364,7 @@ namespace RoboShell
         void FaceDropout(object sender, object e)
         {
             DropoutTimer.Stop();
+            PreDropoutTimer.Stop();
             InDialog = false;
             BoringCounter = Rnd.Next(Config.MinBoringSeconds, Config.MaxBoringSeconds);
             LogLib.Log.Trace("Face dropout initiated");
@@ -370,6 +375,13 @@ namespace RoboShell
             InferenceTimer.Start();
         }
 
+
+        void PreDropout(object sender, object e)
+        {
+            PreDropoutTimer.Stop();
+            LogLib.Log.Trace("Face PRE dropout initiated");
+            RE.SetVar("Event", "FacePreOut");
+        }
 
         async void StartDialog(object sender, object e)
         {
