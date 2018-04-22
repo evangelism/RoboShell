@@ -44,6 +44,13 @@ namespace RoboLogic
             Media.Play();
         }
 
+        public async Task Speak(SpeechSynthesisStream s)
+        {
+            Media.SetSource(s, s.ContentType);
+            Media.AutoPlay = true;
+            Media.Play();
+        }
+
         public void ShutUp() {
             Media.Stop();
         }

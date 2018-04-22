@@ -118,6 +118,7 @@ namespace RoboShell
             //RE = XMLRuleEngine.LoadXml(xdoc);
             RE = BracketedRuleEngine.LoadBracketedKb(Config.KBFileName);
             RE.SetSpeaker(spk);
+            RE.Initialize();
             RE.SetExecutor(ExExecutor);
             FaceWaitTimer.Tick += StartDialog;
             DropoutTimer.Tick += FaceDropout;
@@ -192,7 +193,7 @@ namespace RoboShell
                 }
             }
             if (input != "0000") {
-                //                LogLib.Log.Trace($"Received: {input}");
+                LogLib.Log.Trace($"Received: {input}");
             }
             RE.SetVar("ArduinoInput", input);
         }
@@ -221,7 +222,7 @@ namespace RoboShell
 
         private void InferenceStep(object sender, object e)
         {
-            if (media.CurrentState == MediaElementState.Playing) return;
+            //if (media.CurrentState == MediaElementState.Playing) return;
             if (!InDialog) BoringCounter--;
             if (BoringCounter==0)
             {
