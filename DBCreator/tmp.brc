@@ -1,0 +1,74 @@
+($Event == "Ping") => (
+    ((GPIO 100 0,1,1,1 1000) and (play 100 "sneeze.wav")) or
+    ((GPIO 100 0,1,1,1 1000) and (play 100 "whistle.wav")) or
+    ((GPIO 100 0,1,1,1 1000) and (play 100 "yawn.wav")) or
+    ((GPIO 100 0,1,1,1 1000) and (play 100 "snore.wav"))
+)
+
+(($Event == "FaceRecognized") and ($AgeCat == "A") and ($Gender == "M")) => ((Name = "Молодой Астронавт") or (Name = "Нестарый Астронавт"))
+(($Event == "FaceRecognized") and ($AgeCat == "A") and ($Gender == "F")) => ((Name = "Молодая Астронавтка") or (Name = "Нестарая Астронавтка"))
+(($Event == "FaceRecognized") and ($AgeCat == "O") and ($Gender == "M")) => ((Name = "Немолодой Астронавт") or (Name = "Умудрённый опытом Астронавт"))
+(($Event == "FaceRecognized") and ($AgeCat == "O") and ($Gender == "F")) => ((Name = "Немолодая Астронавтка") or (Name = "Умудрённая опытом Астронавтка"))
+(($Event == "FaceRecognized") and ($AgeCat == "A") and ($Gender == "M") and ($Emotion == "Happiness"))) => (Name = "Молодой Астронавт Довольный")
+(($Event == "FaceRecognized") and ($AgeCat == "A") and ($Gender == "M") and ($Emotion == "Sadness"))) =>   (Name = "Молодой Астронавт Недовольный")
+(($Event == "FaceRecognized") and ($AgeCat == "A") and ($Gender == "F") and ($Emotion == "Sadness"))) =>   (Name = "Молодая Астронавтка Недовольная")
+(($Event == "FaceRecognized") and ($AgeCat == "A") and ($Gender == "F") and ($Emotion == "Happiness"))) => (Name = "Молодая Астронавтка Довольная")
+(($Event == "FaceRecognized") and ($AgeCat == "O") and ($Gender == "M") and ($Emotion == "Happiness"))) => (Name = "Умудрённый опытом Астронавт Довольный")
+(($Event == "FaceRecognized") and ($AgeCat == "O") and ($Gender == "M") and ($Emotion == "Sadness"))) =>   (Name = "Умудрённый опытом Астронавт Недовольный")
+(($Event == "FaceRecognized") and ($AgeCat == "O") and ($Gender == "F") and ($Emotion == "Happiness"))) => (Name = "Умудрённая опытом Астронавтка Довольная")
+(($Event == "FaceRecognized") and ($AgeCat == "O") and ($Gender == "F") and ($Emotion == "Sadness"))) =>   (Name = "Умудрённая опытом Астронавтка Недовольная")
+
+(($Event == "FaceRecognized") and ($Stage == "startConversation") and ($isPlaying != "True"))=> (
+	((GPIO 100 1,1,1,0 4000) or (GPIO 100 0,0,0,1 4000)) and
+	(userName = "{${Gender}:M=Астронавт|F=Астронавтка}") and ((say "Человек! то, что ты {${Emotion}:happiness=весёлый -- это нормально|не весёлый -- это нормально} для {твоей расы|твоего вида|твоей планеты}.") or (say "Приветствую тебя, ${Name}! ")) and 
+	(Stage = "aboutMe1")
+)
+($Stage = "Fact_1") => (
+    (say "Медведи в России встречаются в 19 раз чаще, чем астероиды в Главном астероидном поясе") and
+    (Stage = "FactsMenu")
+)
+
+($Stage = "Fact_2") => (
+    (say "Если заплакать в космосе, слезы останутся на глазах и лице.") and
+    (Stage = "FactsMenu")
+)
+
+($Stage = "Fact_3") => (
+    (say "Одновременно замерзают и кипят все жидкости в космосе. Даже моча.") and
+    (Stage = "FactsMenu")
+)
+
+($Stage = "Fact_4") => (
+    (say "Космонавты носят подгузники при посадке, взлете и при выходе в открытый космос.") and
+    (Stage = "FactsMenu")
+)
+
+($Stage = "Fact_5") => (
+    (say "Газовое облако в созвездии Орел содержит достаточно алкоголя, чтобы создать 200 септиллионов литров пива.") and
+    (Stage = "FactsMenu")
+)
+
+($Stage = "Fact_6") => (
+    (say "Если бы вы упали в черную дыру, вас бы растянуло как лапшу. Явление называется спаггетификация.") and
+    (Stage = "FactsMenu")
+)
+
+($Stage = "Fact_7") => (
+    (say "Если ничто не потревожит Луну (например, метеорит), то следы, оставленные на ее поверхности, останутся нетронутыми навсегда. В отличие от Земли тут нет эрозии, вызванной ветром и водой.") and
+    (Stage = "FactsMenu")
+)
+
+($Stage = "Fact_8") => (
+    (say "Навозные жуки ориентируются по Млечному пути. Птицы, тюлени и люди используют звезды для ориентирования, но африканские навозные жуки используют целую галактику, а не отдельные звезды, чтобы убедится в том, что они двигаются по прямой.") and
+    (Stage = "FactsMenu")
+)
+
+($Stage = "Fact_9") => (
+    (say "Мы все сделаны из звездной пыли. После Большого Взрыва, крошечные частицы соединились в водород и гелий. Затем в очень плотных и горячих центрах звёзд они объединились, создав элементы, включая железо. Так как люди и другие животные, и большая часть материи содержит эти элементы, можно сказать, что мы состоим из звездной пыли.") and
+    (Stage = "FactsMenu")
+)
+
+($Stage = "Fact_10") => (
+    (say "Более 212 лет вам бы понадобилось, чтобы на обычном автомобиле добраться до Солнца.") and
+    (Stage = "FactsMenu")
+)
