@@ -1,0 +1,19 @@
+﻿
+(($Event == "FaceRecognized") and ($AgeCat == "A") and ($Gender == "M")) => ((Name = "Молодой Астронавт") or (Name = "Нестарый Астронавт"))
+(($Event == "FaceRecognized") and ($AgeCat == "A") and ($Gender == "F")) => ((Name = "Молодая Астронавтка") or (Name = "Нестарая Астронавтка"))
+(($Event == "FaceRecognized") and ($AgeCat == "O") and ($Gender == "M")) => ((Name = "Немолодой Астронавт") or (Name = "Умудрённый опытом Астронавт"))
+(($Event == "FaceRecognized") and ($AgeCat == "O") and ($Gender == "F")) => ((Name = "Немолодая Астронавтка") or (Name = "Умудрённая опытом Астронавтка"))
+(($Event == "FaceRecognized") and ($AgeCat == "A") and ($Gender == "M") and ($Emotion == "Happiness"))) => (Name = "Молодой Астронавт Довольный")
+(($Event == "FaceRecognized") and ($AgeCat == "A") and ($Gender == "M") and ($Emotion == "Sadness"))) =>   (Name = "Молодой Астронавт Недовольный")
+(($Event == "FaceRecognized") and ($AgeCat == "A") and ($Gender == "F") and ($Emotion == "Sadness"))) =>   (Name = "Молодая Астронавтка Недовольная")
+(($Event == "FaceRecognized") and ($AgeCat == "A") and ($Gender == "F") and ($Emotion == "Happiness"))) => (Name = "Молодая Астронавтка Довольная")
+(($Event == "FaceRecognized") and ($AgeCat == "O") and ($Gender == "M") and ($Emotion == "Happiness"))) => (Name = "Умудрённый опытом Астронавт Довольный")
+(($Event == "FaceRecognized") and ($AgeCat == "O") and ($Gender == "M") and ($Emotion == "Sadness"))) =>   (Name = "Умудрённый опытом Астронавт Недовольный")
+(($Event == "FaceRecognized") and ($AgeCat == "O") and ($Gender == "F") and ($Emotion == "Happiness"))) => (Name = "Умудрённая опытом Астронавтка Довольная")
+(($Event == "FaceRecognized") and ($AgeCat == "O") and ($Gender == "F") and ($Emotion == "Sadness"))) =>   (Name = "Умудрённая опытом Астронавтка Недовольная")
+
+(($Event == "FaceRecognized") and ($Stage == "startConversation") and ($isPlaying != "True"))=> (
+	((GPIO 100 1,1,1,0 4000) or (GPIO 100 0,0,0,1 4000)) and
+	(userName = "{${Gender}:M=Астронавт|F=Астронавтка}") and ((say "Человек! то, что ты {${Emotion}:happiness=весёлый -- это нормально|не весёлый -- это нормально} для {твоей расы|твоего вида|твоей планеты}.") or (say "Приветствую тебя, ${Name}! ")) and 
+	(Stage = "aboutMe1")
+)

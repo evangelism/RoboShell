@@ -1,0 +1,6 @@
+($Event == "Ping") => (
+    ((GPIO 100 0,1,1,1 1000) and (play 100 "sneeze.wav")) or
+    ((GPIO 100 0,1,1,1 1000) and (play 100 "whistle.wav")) or
+    ((GPIO 100 0,1,1,1 1000) and (play 100 "yawn.wav")) or
+    ((GPIO 100 0,1,1,1 1000) and (play 100 "snore.wav"))
+)
