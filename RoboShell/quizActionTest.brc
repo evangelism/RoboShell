@@ -10,3 +10,11 @@
 ($Event == "Key_0") => ((stayActive) and (clear $Event) and (stopQuiz = "False"))
 
 ($Event == "Key_1") => ((quiz "quiz.csv" randomOrder 2:5) and (stayActive) and (clear $Event))
+
+
+($Event == "Key_2") => (
+	(stayActive) and (clear $Event) and
+	(play "10.mp3")
+)
+
+($Event == "Key_5") => ((shutUp) and (stayActive) and (clear $Event))
