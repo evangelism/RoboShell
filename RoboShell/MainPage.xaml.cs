@@ -461,10 +461,10 @@ namespace RoboShell
             using (StringContent content = new StringContent(json.ToString(), Encoding.UTF8, "application/json")){
                 try {
                     var t1 = DateTimeOffset.Now.ToUnixTimeMilliseconds();
-                    Debug.WriteLine("Before sent to network");
+                    LogLib.Log.Trace("Before sent to network");
                     HttpResponseMessage response = await httpClient.PostAsync(Config.CognitiveEndpoint, content);
                     var res = DateTimeOffset.Now.ToUnixTimeMilliseconds() - t1;
-                    Debug.WriteLine($"After sent to network {res}");
+                    LogLib.Log.Trace($"After sent to network {res}");
                     if (response.StatusCode.Equals(HttpStatusCode.OK)) {
                         photoInfoDTO = JsonConvert.DeserializeObject<PhotoInfoDTO>(await response.Content.ReadAsStringAsync());
                     }

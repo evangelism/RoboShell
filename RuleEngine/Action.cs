@@ -468,7 +468,7 @@ namespace RuleEngineNet {
             }
             
 
-            Debug.WriteLine("say: " + S.EvalString(Text));
+            LogLib.Log.Trace("say: " + S.EvalString(Text));
             SayHelper(S.EvalString(Text), S);
             LogLib.Log.Trace($"AFTER {GetType().Name}.Execute()");
         }
@@ -478,23 +478,23 @@ namespace RuleEngineNet {
         }
         public async void SayHelper(String Text, State S)
         {
-            Debug.WriteLine("1");
+            LogLib.Log.Trace("1");
             while (isPlaying)
             {
                 await Task.Delay(TimeSpan.FromMilliseconds(300));
             }
-            Debug.WriteLine("2");
+            LogLib.Log.Trace("2");
             isPlaying = true;
             S.Assign("isPlaying", "True");
-            Debug.WriteLine("3");
+            LogLib.Log.Trace("3");
             await Windows.ApplicationModel.Core.CoreApplication.MainView.CoreWindow.Dispatcher.RunTaskAsync(() => Speaker.Speak(Text));
-            Debug.WriteLine("4");
+            LogLib.Log.Trace("4");
             await Task.Delay(TimeSpan.FromMilliseconds(500));
-            Debug.WriteLine("5");
+            LogLib.Log.Trace("5");
             while (Speaker.Media.CurrentState != MediaElementState.Closed && Speaker.Media.CurrentState != MediaElementState.Stopped && Speaker.Media.CurrentState != MediaElementState.Paused) {
                 await Task.Delay(TimeSpan.FromMilliseconds(500));
             }
-            Debug.WriteLine("6");
+            LogLib.Log.Trace("6");
             isPlaying = false;
             S.Assign("isPlaying", "False");
         }
@@ -680,7 +680,7 @@ namespace RuleEngineNet {
         public override void Execute(State S)
         {
             LogLib.Log.Trace($"BEFORE {GetType().Name}.Execute()");
-            System.Diagnostics.Debug.WriteLine($"GPIO_TASK {task.Status}");
+            LogLib.Log.Trace($"GPIO_TASK {task.Status}");
             var rand = new Random();
             int tmp = rand.Next(1, 101);
             if (tmp > Probability)
@@ -716,7 +716,7 @@ namespace RuleEngineNet {
                     pins[i].Write(GpioPinValue.High);
                 debug += pins[i].Read().ToString();
             }
-            System.Diagnostics.Debug.WriteLine($"Sended {debug}");
+            LogLib.Log.Trace($"Sended {debug}");
 
             Task.Run(() => {
                 while (DateTimeOffset.Now.ToUnixTimeMilliseconds() - startTime < Time) {
@@ -727,10 +727,10 @@ namespace RuleEngineNet {
                     pin.Write(GpioPinValue.Low);
                     pin.Dispose();
                 }
-                System.Diagnostics.Debug.WriteLine("Disposed");
+                LogLib.Log.Trace("Disposed");
                 executing = false;
             });
-            System.Diagnostics.Debug.WriteLine("Exited GPIO");
+            LogLib.Log.Trace("Exited GPIO");
             LogLib.Log.Trace($"AFTER {GetType().Name}.Execute()");
         }
 
