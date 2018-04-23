@@ -879,7 +879,6 @@ namespace RuleEngineNet {
                 var questionToAskPosition = questionsToAsk[i];
 
                 await SpeakingFunction(S, _quiz.ElementAt(questionToAskPosition).Item1);
-                S.Assign("isPlaying", "False");
 
                 try {
                     //bool isPaused = false;
@@ -940,14 +939,24 @@ namespace RuleEngineNet {
             }
 
             var result = CompareLists(correctAnswers, userAnswers);
-            foreach (var i in result.Item1) {
-                await SpeakingFunction(S, _quiz.ElementAt(questionsToAsk[i]).Item3);
-            }
 
-            if (result.Item1.Count == 0) {
-                await SpeakingFunction(S, await Speaker.Synthesizer.SynthesizeTextToStreamAsync("всё правильно"));
-
+            if (S.ContainsKey("sayGood")) {
+                if (S["sayGood"] == "True") {
+                    if (result.Item1.Count > 0)
+                    {
+                        await SpeakingFunction(S, await Speaker.Synthesizer.SynthesizeTextToStreamAsync($"ты допускал ошибки. процент правильных ответов {result.Item2}. внимай."));
+                        foreach (var i in result.Item1)
+                        {
+                            await SpeakingFunction(S, _quiz.ElementAt(questionsToAsk[i]).Item3);
+                        }
+                    }
+                    else if (result.Item1.Count == 0) {
+                        await SpeakingFunction(S, await Speaker.Synthesizer.SynthesizeTextToStreamAsync("всё правильно"));
+                    }
+                }
             }
+            
+
             S.Assign("inQuiz", "False");
 
             async Task SpeakingFunction(State state, SpeechSynthesisStream s) {
@@ -961,6 +970,7 @@ namespace RuleEngineNet {
                        Say.Speaker.Media.CurrentState != MediaElementState.Paused) {
                     await Task.Delay(TimeSpan.FromMilliseconds(100));
                 }
+                state.Assign("isPlaying", "False");
 
                 Say.isPlaying = false;
             }

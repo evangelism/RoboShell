@@ -1,3 +1,5 @@
-(include ping.txt)
-(include usernames.txt)
-(include facts.txt)
+
+($Event == "Key_1") => (Stage = "MeaninglessQuestion")
+
+(include meaningless_question.brc)
+(include bye.brc)

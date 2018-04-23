@@ -1,17 +1,9 @@
-﻿
-($Event == "Key_1") => (Stage = "MeaninglessQuestion")
-($Event == "Key_2") => ((GPIO 100 0,0,0,0 3000) and (clear $Event) and (stayActive))
-
-(($Stage == "MeaninglessQuestion") and ($isPlaying != "True")) => ((
+﻿(($Stage == "MeaninglessQuestion") and ($isPlaying != "True")) => ((
  (Stage = "meaninglessQuestion1") or 
  (Stage = "meaninglessQuestion2") or 
  (Stage = "meaninglessQuestion3")) and
  (MeaninglessQuestionStage = "True") and
  (stayActive)
-)
-
-(($MeaninglessQuestionStage == "True") and ($Event == "FaceOut")) => (
-	(GPIO 100 0,1,0,0 4000) and (Stage = "Bye")
 )
 
 (($Event == "FaceIn") and ($MeaninglessQuestionStage == "True") and ($RecapturingMeaninglessQuestion == "True")) => (
@@ -90,7 +82,4 @@
 	and ((say "Мне он очень по душе") or (say "как же он хорош"))
 	and (Stage = "firstChoice")
 	and (MeaninglessQuestionStage = "False")
-)
-(($Stage == "Bye") and ($isPlaying != "True")) => (
-	 (GPIO 100 0,0,0,0 10000) and (say "Сеанс связи окончен") and (Stage = "afterBye")
 )

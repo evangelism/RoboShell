@@ -1,0 +1,29 @@
+﻿
+(($Stage == "Disco") and ($isPlaying != "True")) => (
+	(GPIO 100 1,0,1,1 25000) and (say "давай танцевать! что думаешь?") and (Stage = "DanceQuest")
+)
+
+(($Stage == "DanceQuest") and ($ArduinoInput == "0100")) => (
+	(GPIO 100 0,1,0,0 2000)
+	and (Stage = "DanceStart")
+)
+
+(($Stage == "DanceQuest") and (($ArduinoInput == "0010") or ($ArduinoInput == "0001"))) => (
+	(GPIO 100 0,1,0,0 2000)
+	and (Stage = "Bye")
+)
+
+(($Stage == "DanceStart") and ($isPlaying != "True")) => (
+	 (GPIO 100 0,1,1,0 200000) and (
+		(play 100 "01.mp3" 200000) or
+		(play 100 "02.mp3" 200000) or
+		(play 100 "03.mp3" 200000) or
+		(play 100 "04.mp3" 200000) or
+		(play 100 "05.mp3" 200000)
+	) and (Stage = "Dancing")
+)
+
+
+(($Stage == "Dancing") and ($Event == "FaceOut")) => (
+	(Stage = "Bye") and (shutUp)
+)

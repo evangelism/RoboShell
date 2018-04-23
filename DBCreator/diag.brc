@@ -1,0 +1,51 @@
+﻿(($Stage == "Diag") and ($isPlaying != "True")) => (
+	(GPIO 100 1,0,1,1 20000) and (say "предлагаю диагностику") and (Stage = "DiagQuest")
+)
+
+(($Stage == "DiagQuest") and ($ArduinoInput == "0100")) => (
+	(GPIO 100 0,1,0,0 5000)
+	and (Stage = "DiagStart")
+)
+
+(($Stage == "DiagQuest") and ($ArduinoInput == "0010")) => (
+	(GPIO 100 0,1,0,0 5000)
+	and (Stage = "Disco")
+)
+
+(($Stage == "DiagQuest") and ($ArduinoInput == "0001")) => (
+	(GPIO 100 0,1,0,0 5000) 
+	and (((say "впрочем, я решу за тебя. не будет диагностики.") and (Stage = "Disco")) or ((say "впрочем, я решу за тебя. будет диагностика.") and (Stage = "DiagStart")))
+)
+
+(($Stage == "DiagStart") and ($isPlaying != "True")) => (
+	(sayGood = "False") and (quiz "diag0.csv")
+)
+
+(($inQuiz == "True") and ($Event == "FacePreOut") and ($isPaused != "True")) => (
+	(shutUp) and (isPaused = "True") and (ext:Recapture "After:5") and (stayActive)
+)
+
+(($inQuiz == "True") and ($Event == "FaceIn") and ($isPaused == "True")) => (
+	(isPaused = "False") and (stayActive)
+)
+
+(($inQuiz == "True") and ($Event == "FaceOut") and ($stopQuiz != "True")) => (
+	(shutUp) and (stopQuiz = "True") and (isPaused = "False") and (GPIO 100 0,1,0,0 4000) and (sayGood = "False") and (stayActive)
+)
+
+(($inQuiz == "False") and ($stopQuiz == "True")) => (
+	(stopQuiz = "False") and (Stage = "Bye") and (stayActive)
+)
+
+
+(($Stage == "DiagStart") and ($inQuiz != "True") and ($isPlaying != "True") and ($lastAnswer == "True")) => (
+	(Stage = "Bye") and (sayGood = "False") and (say "Мне очень жаль, по-моему наш полет окончен!")
+)
+
+(($Stage == "DiagStart") and ($inQuiz != "True") and ($isPlaying != "True") and ($lastAnswer == "False")) => (
+	(Stage = "Disco") and (sayGood = "False") and (say "Кажется мы подружились с этими очаровательными, восьминогими, разумными паучками! Поздравляю, коллега!")
+)
+
+(($Stage == "DiagStart") and ($inQuiz != "True") and ($isPlaying != "True") and ($lastAnswer == "None")) => (
+	(Stage = "Bye") and (sayGood = "False") and (say "ответа нет или он непонятен. кажется, наше путешествие успело завершиться.")
+)

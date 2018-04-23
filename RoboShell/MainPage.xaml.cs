@@ -52,8 +52,8 @@ namespace RoboShell
         MediaCapture MC;
 
         DispatcherTimer FaceWaitTimer = new DispatcherTimer() { Interval = TimeSpan.FromSeconds(2) };
-        DispatcherTimer PreDropoutTimer = new DispatcherTimer() { Interval = TimeSpan.FromSeconds(2) };
-        DispatcherTimer DropoutTimer = new DispatcherTimer() { Interval = TimeSpan.FromSeconds(7) };
+        DispatcherTimer PreDropoutTimer = new DispatcherTimer() { Interval = TimeSpan.FromSeconds(6) };
+        DispatcherTimer DropoutTimer = new DispatcherTimer() { Interval = TimeSpan.FromSeconds(15) };
         DispatcherTimer InferenceTimer = new DispatcherTimer() { Interval = TimeSpan.FromSeconds(1) };
         DispatcherTimer GpioTimer = new DispatcherTimer() { Interval = TimeSpan.FromMilliseconds(500) };
         DispatcherTimer ArduinoInputTimer = new DispatcherTimer() { Interval = TimeSpan.FromMilliseconds(500) };
@@ -284,7 +284,7 @@ namespace RoboShell
         /// </summary>
         private async void FaceDetectedEvent(FaceDetectionEffect sender, FaceDetectedEventArgs args)
         {
-            await HighlightDetectedFaces(args.ResultFrame.DetectedFaces);
+            await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => HighlightDetectedFaces(args.ResultFrame.DetectedFaces));
 //            await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => HighlightDetectedFace(args.ResultFrame.DetectedFaces.FirstOrDefault()));
         }
 
@@ -403,6 +403,10 @@ namespace RoboShell
         async Task<bool> RecognizeFace() {
             if (!IsFacePresent) {
                 return false;
+            }
+
+            if (RE.State["Event"] == "FacePreOut") {
+                RE.SetVar("Event", "FaceIn");
             }
             var startTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
             LogLib.Log.Trace("RecognizeFace() started");

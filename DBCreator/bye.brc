@@ -1,0 +1,3 @@
+﻿(($Stage == "Bye") and ($isPlaying != "True")) => (
+	 (GPIO 100 0,0,0,0 10000) and (say "Сеанс связи окончен") and (Stage = "afterBye")
+)
