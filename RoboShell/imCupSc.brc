@@ -7,10 +7,11 @@
 )
 
 ($Event == "Ping") => (
-    ((GPIO 100 0,1,1,1 1000) and (play 100 "sneeze.wav")) or
+    (((GPIO 100 0,1,1,1 1000) and (play 100 "sneeze.wav")) or
     ((GPIO 100 0,1,1,1 1000) and (play 100 "whistle.wav")) or
     ((GPIO 100 0,1,1,1 1000) and (play 100 "yawn.wav")) or
-    ((GPIO 100 0,1,1,1 1000) and (play 100 "snore.wav"))
+    ((GPIO 100 0,1,1,1 1000) and (play 100 "snore.wav")) or
+	(Stage = "DanceStart")) and (stayActive) and (clear $Event)
 )
 
 ($Event == "FaceIn") => ((GPIO 100 1,0,1,0 10000) and (say "{Хьюстон, Хьюстон, как слышно?| Это ваш первый сеанс связи с подушкой. Поехали!|Земля, Земля, это подушка, приём}") and 
@@ -223,7 +224,7 @@
 
 
 (($Stage == "QuizStart") and ($inQuiz != "True") and ($isPlaying != "True")) => (
-	(Stage = "Disco") and (sayGood = "False")
+	(Stage = "Diag") and (sayGood = "False")
 )
 
 (($Stage == "Diag") and ($isPlaying != "True")) => (
@@ -330,7 +331,10 @@
 	) and (Stage = "Dancing")
 )
 
-(($Stage == "Dancing") and ($Event == "FaceOut")) => (
+
+
+
+(($Stage == "Dancing") and ((($Event == "FaceOut") and ($KeyboardIn != "Key_5")) or ($KeyboardIn == "Key_4")) ) => (
 	(Stage = "Bye") and (shutUp)
 )
 
