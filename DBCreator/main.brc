@@ -1,5 +1,27 @@
 
-($Event == "Key_1") => (Stage = "MeaninglessQuestion")
+($KeyboardIn == "Key_2") => ((GPIO 100 0,0,0,0 3000) and (clear $Event) and (stayActive))
+
+(($KeyboardIn == "Key_6") or ($KeyboardIn == "Key_7") or ($KeyboardIn == "Key_8") or ($KeyboardIn == "Key_9")) => (
+	(ArduinoInput = "{${KeyboardIn}:Key_6=0100|Key_7=0010|Key_8=0001|Key_9=0000}") and (clear $KeyboardIn) and (stayActive)
+)
+
+($Event == "Ping") => (
+    ((GPIO 100 0,1,1,1 1000) and (play 100 "sneeze.wav")) or
+    ((GPIO 100 0,1,1,1 1000) and (play 100 "whistle.wav")) or
+    ((GPIO 100 0,1,1,1 1000) and (play 100 "yawn.wav")) or
+    ((GPIO 100 0,1,1,1 1000) and (play 100 "snore.wav"))
+)
+
+(include initial.brc)
 
 (include meaningless_question.brc)
+
+(include fact.brc)
+
+(include quiz.brc)
+
+(include diag.brc)
+
+(include disco.brc)
+
 (include bye.brc)

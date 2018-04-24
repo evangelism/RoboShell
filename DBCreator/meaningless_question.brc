@@ -11,11 +11,11 @@
 )
 
 (($Event == "FacePreOut") and ($MeaninglessQuestionStage == "True")) => (
-	(ext:Recapture "After:5") and (RecapturingMeaninglessQuestion = "True") and (stayActive) and (GPIO 100 0,1,0,0 4000)
+	(ext:Recapture "After:5") and (RecapturingMeaninglessQuestion = "True") and (GPIO 100 0,1,0,0 4000) and (stayActive)
 )
 
 (($Event == "FaceOut") and ($MeaninglessQuestionStage == "True")) => (
-	(RecapturingMeaninglessQuestion = "False") and (MeaninglessQuestionStage = "False") and (stayActive)
+	(RecapturingMeaninglessQuestion = "False") and (MeaninglessQuestionStage = "False") and (Stage = "Bye") and (stayActive)
 )
 
 (($Stage == "meaninglessQuestion1") and ($isPlaying != "True")) => (
@@ -32,7 +32,7 @@
 (($Stage == "meaninglessResponse1") and ($isPlaying != "True")) => (
 	(GPIO 100 0,1,0,0 4000)
 	and (say "я за тебя рада ") 
-	and (Stage = "firstChoice")
+	and (Stage = "preFactQuestion")
 	and (MeaninglessQuestionStage = "False") and (stayActive)
 )
 
@@ -57,14 +57,14 @@
 (($Stage == "meaninglessResponseNo2") and ($isPlaying != "True")) => (
 	(GPIO 100 0,1,0,0 4000)
 	and (say "Если ты ещё и майнер, развернись и беги, космос не для тебя! ") 
-	and (Stage = "firstChoice")
+	and (Stage = "preFactQuestion")
 	and (MeaninglessQuestionStage = "False") and (stayActive)
 )
 
 (($Stage == "meaninglessResponseYes2") and ($isPlaying != "True")) => (
 	(GPIO 100 0,1,0,0 4000)
 	and (say "Правильно!") 
-	and (Stage = "firstChoice")
+	and (Stage = "preFactQuestion")
 	and (MeaninglessQuestionStage = "False") and (stayActive)
 )
 
@@ -84,6 +84,6 @@
 (($Stage == "meaninglessResponse3") and ($isPlaying != "True")) => (
 	(GPIO 100 0,1,0,0 4000)
 	and ((say "Мне он очень по душе") or (say "как же он хорош"))
-	and (Stage = "firstChoice")
+	and (Stage = "preFactQuestion")
 	and (MeaninglessQuestionStage = "False") and (stayActive)
 )

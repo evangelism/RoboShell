@@ -19,7 +19,19 @@
 		(play 100 "02.mp3" 200000) or
 		(play 100 "03.mp3" 200000) or
 		(play 100 "04.mp3" 200000) or
-		(play 100 "05.mp3" 200000)
+		(play 100 "05.mp3" 200000) or
+		(play 100 "06.mp3" 200000) or
+		(play 100 "07.mp3" 200000) or
+		(play 100 "08.mp3" 200000) or
+		(play 100 "09.mp3" 200000) or
+		(play 100 "10.mp3" 200000) or
+		(play 100 "11.mp3" 200000) or
+		(play 100 "12.mp3" 200000) or
+		(play 100 "13.mp3" 200000) or
+		(play 100 "14.mp3" 200000) or
+		(play 100 "15.mp3" 200000) or
+		(play 100 "16.mp3" 200000) or
+		(play 100 "17.mp3" 200000)
 	) and (Stage = "Dancing")
 )
 

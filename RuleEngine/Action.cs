@@ -466,10 +466,11 @@ namespace RuleEngineNet {
             {
                 return;
             }
-            
 
-            LogLib.Log.Trace("say: " + S.EvalString(Text));
-            SayHelper(S.EvalString(Text), S);
+
+            var textToSay = S.EvalString(Text);
+            LogLib.Log.Trace("say: " + textToSay);
+            SayHelper(textToSay, S);
             LogLib.Log.Trace($"AFTER {GetType().Name}.Execute()");
         }
 

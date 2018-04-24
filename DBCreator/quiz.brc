@@ -1,4 +1,4 @@
-﻿(($Stage == "QuizAsk") and ($isPlaying != "True")) => (
+﻿(($Stage == "preQuizQuestion") and ($isPlaying != "True")) => (
 	(GPIO 100 1,0,1,1 20000) and (say "предлагаю викторину") and (Stage = "QuizQuest")
 )
 
@@ -9,7 +9,7 @@
 
 (($Stage == "QuizQuest") and ($ArduinoInput == "0010")) => (
 	(GPIO 100 0,1,0,0 5000)
-	and (Stage = "Diagn")
+	and (Stage = "Diag")
 )
 
 (($Stage == "QuizQuest") and ($ArduinoInput == "0001")) => (
@@ -19,7 +19,6 @@
 
 (($Stage == "QuizStart") and ($isPlaying != "True")) => (
 	(sayGood = "True") and (
-	(quiz "quiz0.csv" randomOrder 2:3) or
 	(quiz "quiz1.csv" randomOrder 3:6) or
 	(quiz "quiz2.csv" randomOrder 3:6))
 )

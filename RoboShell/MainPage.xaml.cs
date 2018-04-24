@@ -206,8 +206,9 @@ namespace RoboShell
                 args.VirtualKey <= VirtualKey.Number9)
             {
                 var st = $"Key_{args.VirtualKey - VirtualKey.Number0}";
-                LogLib.Log.Trace($"Initiating event {st}");
-                RE.SetVar("Event", st);
+                //LogLib.Log.Trace($"Initiating event {st}");
+                //RE.SetVar("Event", st);
+                RE.SetVar("KeyboardIn", st);
 //                RE.Step();
             }
             // S = print state
@@ -405,9 +406,12 @@ namespace RoboShell
                 return false;
             }
 
-            if (RE.State["Event"] == "FacePreOut") {
-                RE.SetVar("Event", "FaceIn");
+            if (RE.State.ContainsKey("Event")) {
+                if (RE.State["Event"] == "FacePreOut") {
+                    RE.SetVar("Event", "FaceIn");
+                }
             }
+
             var startTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
             LogLib.Log.Trace("RecognizeFace() started");
             FaceWaitTimer.Stop();
