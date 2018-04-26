@@ -118,9 +118,6 @@
     <EmbeddedResource Include="Properties\RuleEngine.rd.xml" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="Sample.kb.xml" />
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="..\LogLib\LogLib.csproj">
       <Project>{5f3ccfb6-713f-40c0-9efe-224c11d8bdb9}</Project>
       <Name>LogLib</Name>

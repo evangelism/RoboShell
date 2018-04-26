@@ -6,23 +6,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Remove="bye.brc" />
-    <None Remove="diag.brc" />
-    <None Remove="disco.brc" />
-    <None Remove="example.txt" />
-    <None Remove="example_result.txt" />
-    <None Remove="fact.brc" />
-    <None Remove="facts.txt" />
-    <None Remove="initial.brc" />
-    <None Remove="main.brc" />
-    <None Remove="meaningless_question.brc" />
-    <None Remove="ping.txt" />
-    <None Remove="quiz.brc" />
-    <None Remove="tmp.brc" />
-    <None Remove="usernames.txt" />
-  </ItemGroup>
-
-  <ItemGroup>
     <Content Include="bye.brc">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>

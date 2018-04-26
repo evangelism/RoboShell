@@ -1,2 +1,0 @@
-﻿($Event == "Key_1") => (say "hello")
-($Event == "Key_0") => (play "countdown.mp3")

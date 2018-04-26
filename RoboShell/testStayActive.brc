@@ -1,2 +1,0 @@
-﻿($Event == "Key_1") => (say "${Event}")
-($Event == "Key_2") => ((say "${Event}") and (stayActive))

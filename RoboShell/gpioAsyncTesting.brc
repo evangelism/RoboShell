@@ -1,6 +1,0 @@
-﻿($Event == "Key_1") => ((GPIO 100 1,0,1,1 10000) and (stayActive) and (clear $Event))
-($Event == "Key_2") => ((GPIO 100 0,1,0,0 10000) and (stayActive) and (clear $Event))
-($Event == "Key_3") => ((GPIO 100 0,0,1,1 10000) and (stayActive) and (clear $Event))
-($Event == "Key_4") => ((GPIO 100 1,1,0,0 10000) and (stayActive) and (clear $Event))
-($Event == "Key_5") => ((GPIO 100 1,1,1,0 10000) and (stayActive) and (clear $Event))
-($Event == "Key_6") => ((GPIO 100 0,0,0,0 10000) and (stayActive) and (clear $Event))
