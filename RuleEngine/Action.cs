@@ -887,10 +887,7 @@ namespace RuleEngineNet {
                     LogLib.Log.Trace("Started fixation");
                     while (S["ArduinoInput"] != ARDUINO_YES &&
                            S["ArduinoInput"] != ARDUINO_NO &&
-                           S["ArduinoInput"] != ARDUINO_NONE &&
-                           S["KeyboardIn"] != "yes" &&
-                           S["KeyboardIn"] != "no" &&
-                           S["KeyboardIn"] != "none") {
+                           S["ArduinoInput"] != ARDUINO_NONE) {
                         await Task.Delay(TimeSpan.FromMilliseconds(200));
                         if (S["isPaused"] == "True" || S["stopQuiz"] == "True") {
                             break;
@@ -911,25 +908,24 @@ namespace RuleEngineNet {
 
                     correctAnswers.Add(_quiz.ElementAt(questionToAskPosition).Item2);
 
-                    if (S["KeyboardIn"] == "none" || S["ArduinoInput"] == ARDUINO_NONE) {
+                    if ( S["ArduinoInput"] == ARDUINO_NONE) {
                         await Task.Delay(TimeSpan.FromMilliseconds(3000));
                     }
 
 
-                    if (S["KeyboardIn"] == "yes" || S["ArduinoInput"] == ARDUINO_YES) {
+                    if (S["ArduinoInput"] == ARDUINO_YES) {
                         userAnswers.Add(true);
                         S["lastAnswer"] = "True";
                     }
-                    else if (S["KeyboardIn"] == "no" || S["ArduinoInput"] == ARDUINO_NO) {
+                    else if (S["ArduinoInput"] == ARDUINO_NO) {
                         userAnswers.Add(false);
                         S["lastAnswer"] = "False";
                     }
-                    else if (S["KeyboardIn"] == "none" || S["ArduinoInput"] == ARDUINO_NONE) {
+                    else if (S["ArduinoInput"] == ARDUINO_NONE) {
                         userAnswers.Add(null);
                         S["lastAnswer"] = "None";
                     }
 
-                    S["KeyboardIn"] = "";
                     LogLib.Log.Trace("Finished fixation");
                     _defaultArduinoState.Execute(S);
                 }
