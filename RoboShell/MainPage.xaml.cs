@@ -1,39 +1,25 @@
-﻿using Microsoft.ProjectOxford.Emotion;
-using Newtonsoft.Json;
-using RoboShell.Logic;
+﻿using Newtonsoft.Json;
+using RoboLogic;
+using RuleEngineNet;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net;
+using System.Net.Http;
+using System.Text;
 using System.Threading.Tasks;
 using Windows.Devices.Enumeration;
+using Windows.Devices.Gpio;
 using Windows.Media.Capture;
 using Windows.Media.Core;
 using Windows.Media.FaceAnalysis;
 using Windows.Media.MediaProperties;
+using Windows.System;
 using Windows.UI.Core;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Navigation;
-using RuleEngineNet;
-using System.Xml.Linq;
-using RoboLogic;
-using Microsoft.ProjectOxford.Face;
-using Windows.UI.Xaml.Media;
-using Windows.System;
-using Microsoft.ProjectOxford.Emotion.Contract;
-using RoboShell.LED;
-using System.Net.Http;
-using System.Text;
-using System.Net;
-using Windows.Devices.Gpio;
-using System.Collections.Generic;
-using System.Diagnostics;
-using Windows.Devices.Perception;
-using Windows.Storage;
-using Microsoft.Extensions.Logging;
-using Serilog;
-using Serilog.Core;
-using LogLib;
 // Это приложение получает ваше изображение с веб-камеры и
 // распознаёт эмоции на нём, обращаясь к Cognitive Services
 // Предварительно с помощью Windows UWP API анализируется, есть
@@ -44,7 +30,7 @@ using LogLib;
 
 namespace RoboShell
 {
-    
+
 
     public sealed partial class MainPage : Page
     {
@@ -66,7 +52,6 @@ namespace RoboShell
         FaceDetectionEffect FaceDetector;
         VideoEncodingProperties VideoProps;
 
-        LEDManager LEDMgr;
 
         private GpioPin[] ArduinoPins;
         private readonly int[] ArduinoPinsNumbers = Config.InputPinsNumbers; //must change
@@ -134,16 +119,6 @@ namespace RoboShell
             media.MediaEnded += EndSpeech;
             CoreWindow.GetForCurrentThread().KeyDown += KeyPressed;
             await Init();
-            LEDMgr = new LEDManager(canvas);
-            if (!Config.Headless)
-            {
-                LEDMgr.AddLED("LE", 8, 8, 0.3, 0.2);
-                LEDMgr.AddLED("RE", 8, 8, 0.7, 0.2);
-                LEDMgr.AddLED("M", 10, 5, 0.5, 0.8);
-                LEDMgr.LEDS["LE"].Load(new LEDImage("eye_blink"));
-                LEDMgr.LEDS["RE"].Load(new LEDImage("eye_blink"));
-                LEDMgr.LEDS["M"].Load(new LEDImage("mouth_neutral"));
-            }
             InferenceTimer.Start();
         }
 
@@ -173,10 +148,6 @@ namespace RoboShell
                         dt.Start();
                     }
                     else await RecognizeFace();
-                    break;
-                case "LED":
-                    var t1 = Param.Split(':');
-                    LEDMgr.LEDS[t1[0]].Load(new LEDImage(t1[1]));
                     break;
             }
         }

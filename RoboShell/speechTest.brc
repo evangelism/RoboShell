@@ -1,1 +1,0 @@
-﻿($Event == "Key_1") => ((say "Привет, мир!") and (stayActive) and (clear $Event))

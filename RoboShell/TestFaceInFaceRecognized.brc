@@ -1,1 +1,0 @@
-﻿($Event != "") => ((say "${Event}") and (clear $Event))
