@@ -1,0 +1,89 @@
+﻿(($Stage == "MeaninglessQuestion") and ($isPlaying != "True")) => ((
+ (Stage = "meaninglessQuestion1") or 
+ (Stage = "meaninglessQuestion2") or 
+ (Stage = "meaninglessQuestion3")) and
+ (MeaninglessQuestionStage = "True") and
+ (stayActive)
+)
+
+(($Event == "FaceIn") and ($MeaninglessQuestionStage == "True") and ($RecapturingMeaninglessQuestion == "True")) => (
+	(Stage = "MeaninglessQuestion") and (RecapturingMeaninglessQuestion = "False") and (stayActive)
+)
+
+(($Event == "FacePreOut") and ($MeaninglessQuestionStage == "True")) => (
+	(ext:Recapture "After:5") and (RecapturingMeaninglessQuestion = "True") and (GPIO 100 0,1,0,0 4000) and (stayActive)
+)
+
+(($Event == "FaceOut") and ($MeaninglessQuestionStage == "True")) => (
+	(RecapturingMeaninglessQuestion = "False") and (MeaninglessQuestionStage = "False") and (Stage = "Bye") and (stayActive)
+)
+
+(($Stage == "meaninglessQuestion1") and ($isPlaying != "True")) => (
+	(say "Это твой первый полет в космос или ты бывалый? ") 
+	and (GPIO 100 1,0,1,1 10000)
+	and (Stage = "meaninglessResponseWait1") and (stayActive)
+)
+
+(($Stage == "meaninglessResponseWait1") and (($ArduinoInput == "0100") or ($ArduinoInput == "0010") or ($ArduinoInput == "0001"))) => (
+	(GPIO 100 1,0,1,1 4000)
+	and (Stage = "meaninglessResponse1") and (stayActive)
+)
+
+(($Stage == "meaninglessResponse1") and ($isPlaying != "True")) => (
+	(GPIO 100 0,1,0,0 4000)
+	and (say "я за тебя рада ") 
+	and (Stage = "preFactQuestion")
+	and (MeaninglessQuestionStage = "False") and (stayActive)
+)
+
+
+
+(($Stage == "meaninglessQuestion2") and ($isPlaying != "True")) => (
+	(say "Ненавидишь ли ты блокчейн так же, как и я? ") 
+	and (GPIO 100 1,0,1,1 10000)
+	and (Stage = "meaninglessResponseWait2") and (stayActive)
+)
+
+(($Stage == "meaninglessResponseWait2") and (($ArduinoInput == "0100") or ($Event == "Key_6") )) => (
+	(GPIO 100 1,0,1,1 4000)
+	and (Stage = "meaninglessResponseYes2") and (stayActive)
+)
+
+(($Stage == "meaninglessResponseWait2") and (($ArduinoInput == "0010") or ($ArduinoInput == "0001"))) => (
+	(GPIO 100 1,0,1,1 4000)
+	and (Stage = "meaninglessResponseNo2") and (stayActive)
+)
+
+(($Stage == "meaninglessResponseNo2") and ($isPlaying != "True")) => (
+	(GPIO 100 0,1,0,0 4000)
+	and (say "Если ты ещё и майнер, развернись и беги, космос не для тебя! ") 
+	and (Stage = "preFactQuestion")
+	and (MeaninglessQuestionStage = "False") and (stayActive)
+)
+
+(($Stage == "meaninglessResponseYes2") and ($isPlaying != "True")) => (
+	(GPIO 100 0,1,0,0 4000)
+	and (say "Правильно!") 
+	and (Stage = "preFactQuestion")
+	and (MeaninglessQuestionStage = "False") and (stayActive)
+)
+
+
+
+(($Stage == "meaninglessQuestion3") and ($isPlaying != "True")) => (
+	((say "C3PO просто красавчик! А ты его тоже любишь скажи? ") or (say "Любишь ли ты Илона Маска так же, как люблю его я?"))
+	and (GPIO 100 1,0,1,1 10000)
+	and (Stage = "meaninglessResponseWait3") and (stayActive)
+)
+
+(($Stage == "meaninglessResponseWait3") and (($ArduinoInput == "0100") or ($ArduinoInput == "0010") or ($ArduinoInput == "0001"))) => (
+	(GPIO 100 1,0,1,1 4000)
+	and (Stage = "meaninglessResponse3") and (stayActive)
+)
+
+(($Stage == "meaninglessResponse3") and ($isPlaying != "True")) => (
+	(GPIO 100 0,1,0,0 4000)
+	and ((say "Мне он очень по душе") or (say "как же он хорош"))
+	and (Stage = "preFactQuestion")
+	and (MeaninglessQuestionStage = "False") and (stayActive)
+)

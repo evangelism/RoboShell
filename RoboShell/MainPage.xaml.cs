@@ -28,6 +28,7 @@ using System.Net;
 using Windows.Devices.Gpio;
 using System.Collections.Generic;
 using System.Diagnostics;
+using Windows.Devices.Perception;
 using Windows.Storage;
 using Microsoft.Extensions.Logging;
 using Serilog;
@@ -51,7 +52,8 @@ namespace RoboShell
         MediaCapture MC;
 
         DispatcherTimer FaceWaitTimer = new DispatcherTimer() { Interval = TimeSpan.FromSeconds(2) };
-        DispatcherTimer DropoutTimer = new DispatcherTimer() { Interval = TimeSpan.FromSeconds(7) };
+        DispatcherTimer PreDropoutTimer = new DispatcherTimer() { Interval = TimeSpan.FromSeconds(6) };
+        DispatcherTimer DropoutTimer = new DispatcherTimer() { Interval = TimeSpan.FromSeconds(15) };
         DispatcherTimer InferenceTimer = new DispatcherTimer() { Interval = TimeSpan.FromSeconds(1) };
         DispatcherTimer GpioTimer = new DispatcherTimer() { Interval = TimeSpan.FromMilliseconds(500) };
         DispatcherTimer ArduinoInputTimer = new DispatcherTimer() { Interval = TimeSpan.FromMilliseconds(500) };
@@ -117,9 +119,11 @@ namespace RoboShell
             //RE = XMLRuleEngine.LoadXml(xdoc);
             RE = BracketedRuleEngine.LoadBracketedKb(Config.KBFileName);
             RE.SetSpeaker(spk);
+            RE.Initialize();
             RE.SetExecutor(ExExecutor);
             FaceWaitTimer.Tick += StartDialog;
             DropoutTimer.Tick += FaceDropout;
+            PreDropoutTimer.Tick += PreDropout;
             InferenceTimer.Tick += InferenceStep;
             InitGpio();
             if (gpio != null)
@@ -191,7 +195,7 @@ namespace RoboShell
                 }
             }
             if (input != "0000") {
-                //                LogLib.Log.Trace($"Received: {input}");
+                LogLib.Log.Trace($"Received: {input}");
             }
             RE.SetVar("ArduinoInput", input);
         }
@@ -202,8 +206,9 @@ namespace RoboShell
                 args.VirtualKey <= VirtualKey.Number9)
             {
                 var st = $"Key_{args.VirtualKey - VirtualKey.Number0}";
-                LogLib.Log.Trace($"Initiating event {st}");
-                RE.SetVar("Event", st);
+                //LogLib.Log.Trace($"Initiating event {st}");
+                //RE.SetVar("Event", st);
+                RE.SetVar("KeyboardIn", st);
 //                RE.Step();
             }
             // S = print state
@@ -220,7 +225,7 @@ namespace RoboShell
 
         private void InferenceStep(object sender, object e)
         {
-            if (media.CurrentState == MediaElementState.Playing) return;
+            //if (media.CurrentState == MediaElementState.Playing) return;
             if (!InDialog) BoringCounter--;
             if (BoringCounter==0)
             {
@@ -240,8 +245,19 @@ namespace RoboShell
             MC = new MediaCapture();
             var cameras = await DeviceInformation.FindAllAsync(DeviceClass.VideoCapture);
             var camera = cameras.Last();
-            var settings = new MediaCaptureInitializationSettings() { VideoDeviceId = camera.Id };
+            var settings = new MediaCaptureInitializationSettings() { VideoDeviceId = camera.Id, StreamingCaptureMode = StreamingCaptureMode.Video};
+            
+        
             await MC.InitializeAsync(settings);
+            var resolutions = MC.VideoDeviceController.GetAvailableMediaStreamProperties(MediaStreamType.Photo).Select(x => x as VideoEncodingProperties).OrderBy(x => x.Height * x.Width);
+            VideoEncodingProperties maxRes = resolutions.FirstOrDefault();
+            for (int i = 0; i < resolutions.Count(); i++) {
+                if (resolutions.ElementAt(i).Width >= 320) {
+                    maxRes = resolutions.ElementAt(i);
+                    break;
+                }
+            }
+            await MC.VideoDeviceController.SetMediaStreamPropertiesAsync(MediaStreamType.Photo, maxRes);
 
             if (!Config.Headless)
             {
@@ -269,7 +285,7 @@ namespace RoboShell
         /// </summary>
         private async void FaceDetectedEvent(FaceDetectionEffect sender, FaceDetectedEventArgs args)
         {
-            await HighlightDetectedFaces(args.ResultFrame.DetectedFaces);
+            await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => HighlightDetectedFaces(args.ResultFrame.DetectedFaces));
 //            await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () => HighlightDetectedFace(args.ResultFrame.DetectedFaces.FirstOrDefault()));
         }
 
@@ -295,11 +311,13 @@ namespace RoboShell
                 {
                     IsFacePresent = false;
                     DropoutTimer.Start();
+                    PreDropoutTimer.Start();
                 }
             }
             else
             {
                 DropoutTimer.Stop();
+                PreDropoutTimer.Stop();
                 if (!Config.Headless)
                 {
                     FaceRect.Margin = new Thickness(cx * face.FaceBox.X, cy * face.FaceBox.Y, 0, 0);
@@ -347,6 +365,7 @@ namespace RoboShell
         void FaceDropout(object sender, object e)
         {
             DropoutTimer.Stop();
+            PreDropoutTimer.Stop();
             InDialog = false;
             BoringCounter = Rnd.Next(Config.MinBoringSeconds, Config.MaxBoringSeconds);
             LogLib.Log.Trace("Face dropout initiated");
@@ -357,6 +376,13 @@ namespace RoboShell
             InferenceTimer.Start();
         }
 
+
+        void PreDropout(object sender, object e)
+        {
+            PreDropoutTimer.Stop();
+            LogLib.Log.Trace("Face PRE dropout initiated");
+            RE.SetVar("Event", "FacePreOut");
+        }
 
         async void StartDialog(object sender, object e)
         {
@@ -379,10 +405,21 @@ namespace RoboShell
             if (!IsFacePresent) {
                 return false;
             }
+
+            if (RE.State.ContainsKey("Event")) {
+                if (RE.State["Event"] == "FacePreOut") {
+                    RE.SetVar("Event", "FaceIn");
+                }
+            }
+
             var startTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
             LogLib.Log.Trace("RecognizeFace() started");
             FaceWaitTimer.Stop();
             var photoAsStream = new MemoryStream();
+            var t1 = MC.VideoDeviceController.GetMediaStreamProperties(MediaStreamType.VideoPreview);
+            var t2 = MC.VideoDeviceController.GetMediaStreamProperties(MediaStreamType.Photo);
+
+
             await MC.CapturePhotoToStreamAsync(ImageEncodingProperties.CreateJpeg(), photoAsStream.AsRandomAccessStream());
 
             byte[] photoAsByteArray = photoAsStream.ToArray();
@@ -428,10 +465,10 @@ namespace RoboShell
             using (StringContent content = new StringContent(json.ToString(), Encoding.UTF8, "application/json")){
                 try {
                     var t1 = DateTimeOffset.Now.ToUnixTimeMilliseconds();
-                    Debug.WriteLine("Before sent to network");
+                    LogLib.Log.Trace("Before sent to network");
                     HttpResponseMessage response = await httpClient.PostAsync(Config.CognitiveEndpoint, content);
                     var res = DateTimeOffset.Now.ToUnixTimeMilliseconds() - t1;
-                    Debug.WriteLine($"After sent to network {res}");
+                    LogLib.Log.Trace($"After sent to network {res}");
                     if (response.StatusCode.Equals(HttpStatusCode.OK)) {
                         photoInfoDTO = JsonConvert.DeserializeObject<PhotoInfoDTO>(await response.Content.ReadAsStringAsync());
                     }

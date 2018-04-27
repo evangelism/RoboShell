@@ -1,0 +1,51 @@
+﻿($Event == "FaceIn") => ((GPIO 100 1,0,1,0 10000) and (say "{Хьюстон, Хьюстон, как слышно?| Это ваш первый сеанс связи с подушкой. Поехали!|Земля, Земля, это подушка, приём}") and 
+	(Stage = "startConversation") and (clear $Event))
+
+(($Event == "FaceIn") and ($FaceCount > 1)) => (
+	(say "отойдите лишние люди! оставьте одного, того, кто осмелится полететь со мной в космос!") and 
+	(Stage = "goaway") and 
+	(clear $Event) and (clear $FaceCount)
+)
+
+($Stage == "goaway") => (ext:Recapture "After:5")
+(($Stage == "goaway") and ($FaceCount == 1)) => (
+	(say "наконец-то ты один!") and 
+	(Stage = "startConversation") and 
+	(clear $Event)
+)
+
+(($Event == "FaceRecognized") and ($Age in [0,10])) => (AgeSay = "меньше дюжины лет")
+(($Event == "FaceRecognized") and ($Age in [9,16])) => (AgeSay = "кажется, постарше двенадцати лет")
+(($Event == "FaceRecognized") and ($Age in [15,23])) => (AgeSay = "лет двадцати")
+(($Event == "FaceRecognized") and ($Age in [22,33])) => (AgeSay = "старше двадцати лет")
+(($Event == "FaceRecognized") and ($Age in [32,46])) => (AgeSay = "за тридцать")
+(($Event == "FaceRecognized") and ($Age in [45,61])) => (AgeSay = "лет пятидесяти")
+(($Event == "FaceRecognized") and ($Age in [60,76])) => (AgeSay = "старше пятидесяти лет")
+(($Event == "FaceRecognized") and ($Age in [75,999])) => (AgeSay = "лет семидесяти")
+
+(($Event == "FaceRecognized") and  ($Gender == "M")) => (NameSay = "{Астронавт|Космонавт|Земной мужчина}")
+(($Event == "FaceRecognized") and  ($Gender == "F")) => (NameSay = "{Астронавтка|Космонавтка|Земная женщина}")
+
+(($Event == "FaceRecognized") and ($Gender == "M")) => (EmotionSay = "{${Emotion}:Happiness=Весёлый|Sadness=Грустный|Невесёлый}")
+(($Event == "FaceRecognized") and ($Gender == "F")) => (EmotionSay = "{${Emotion}:Happiness=Весёлая|Sadness=Грустная|Невесёлая}")
+
+($Event == "FaceRecognized") => (Name = "${NameSay} ${AgeSay} ${EmotionSay}")
+
+
+(($Event == "FaceRecognized") and ($Stage == "startConversation") and ($isPlaying != "True"))=> (
+	((GPIO 100 1,1,1,0 4000) or (GPIO 100 0,0,0,1 4000)) and
+	(userName = "{${Gender}:M=Астронавт|F=Астронавтка}") and 
+	((say "${Name}! то, что ты ${EmotionSay} -- это нормально для {твоего вида|твоей планеты}.") or (say "Приветствую тебя, ${Name}! ")) and 
+	(Stage = "aboutMe1")
+)
+
+(($Stage == "aboutMe1") and ($isPlaying != "True")) => (
+	(say "{Если ты думаешь, что я подушка, то ты не ошибаешься.|Меня зовут Лариса Сергеевна, для тебя просто Лариса.|Я самая уникальная робо-подушка во вселенной, буду помогать тебе в полете.}") 
+	and (Stage = "aboutMe2")
+)
+
+(($Stage == "aboutMe2") and ($isPlaying != "True")) => (
+	(GPIO 100 1,1,0,0 3000) and
+	(say "{Умею танцевать, ремонтировать двигатель космического корабля, проверять твои знания, осуществлять общее руководство полетом.|Я прилетела с необычной планеты, где президент Илон Маск.}") 
+	and (Stage = "MeaninglessQuestion")
+)

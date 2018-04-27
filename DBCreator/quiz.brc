@@ -1,0 +1,45 @@
+﻿(($Stage == "preQuizQuestion") and ($isPlaying != "True")) => (
+	(GPIO 100 1,0,1,1 20000) and (say "предлагаю викторину") and (Stage = "QuizQuest")
+)
+
+(($Stage == "QuizQuest") and ($ArduinoInput == "0100")) => (
+	(GPIO 100 0,1,0,0 5000)
+	and (Stage = "QuizStart")
+)
+
+(($Stage == "QuizQuest") and ($ArduinoInput == "0010")) => (
+	(GPIO 100 0,1,0,0 5000)
+	and (Stage = "Diag")
+)
+
+(($Stage == "QuizQuest") and ($ArduinoInput == "0001")) => (
+	(GPIO 100 0,1,0,0 5000) 
+	and (((say "впрочем, я решу за тебя. не будет викторины.") and (Stage = "Diagn")) or ((say "впрочем, я решу за тебя. будет викторина.") and (Stage = "QuizStart")))
+)
+
+(($Stage == "QuizStart") and ($isPlaying != "True")) => (
+	(sayGood = "True") and (
+	(quiz "quiz1.csv" randomOrder 3:6) or
+	(quiz "quiz2.csv" randomOrder 3:6))
+)
+
+(($inQuiz == "True") and ($Event == "FacePreOut") and ($isPaused != "True")) => (
+	(shutUp) and (isPaused = "True") and (ext:Recapture "After:5") and (stayActive)
+)
+
+(($inQuiz == "True") and ($Event == "FaceIn") and ($isPaused == "True")) => (
+	(isPaused = "False") and (stayActive)
+)
+
+(($inQuiz == "True") and ($Event == "FaceOut") and ($stopQuiz != "True")) => (
+	(shutUp) and (stopQuiz = "True") and (isPaused = "False") and (GPIO 100 0,1,0,0 4000) and (sayGood = "False") and (stayActive)
+)
+
+(($inQuiz == "False") and ($stopQuiz == "True")) => (
+	(stopQuiz = "False") and (Stage = "Bye") and (stayActive)
+)
+
+
+(($Stage == "QuizStart") and ($inQuiz != "True") and ($isPlaying != "True")) => (
+	(Stage = "Disco") and (sayGood = "False")
+)

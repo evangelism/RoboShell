@@ -6,8 +6,7 @@ using System.Threading.Tasks;
 
 namespace RoboShell
 {
-    public static class Config
-    {
+    public static class Config {
         public static string CognitiveEndpoint = "https://roboshellcognitivelogic.azurewebsites.net/api/PhotosAnalyzer";
         public static bool RecognizeEmotions = true;
         public static int MinBoringSeconds = 10;
